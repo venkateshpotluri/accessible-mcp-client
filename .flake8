@@ -1,0 +1,21 @@
+[flake8]
+max-line-length = 127
+max-complexity = 10
+exclude = 
+    .git,
+    __pycache__,
+    .pytest_cache,
+    htmlcov,
+    build,
+    dist,
+    *.egg-info,
+    .venv,
+    venv,
+    env
+extend-ignore = 
+    E203,  # whitespace before ':'
+    W503,  # line break before binary operator
+per-file-ignores =
+    test_direct_client.py:F401,E402
+    test_flask_api.py:F401,E402
+    debug_connection.py:F401,E402
