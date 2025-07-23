@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Accessible MCP Client{% endblock %}</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/accessibility.css') }}">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='images/favicon.ico') }}">
+    
+    <!-- Additional head content -->
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <!-- Skip to main content link -->
+    <a href="#main-content" class="skip-link">Skip to main content</a>
+    
+    <!-- Header -->
+    <header role="banner" class="header">
+        <div class="container">
+            <h1 class="header__title">
+                <a href="{{ url_for('index') }}" class="header__link" aria-label="Accessible MCP Client - Home">
+                    <span class="header__icon" aria-hidden="true">🔗</span>
+                    Accessible MCP Client
+                </a>
+            </h1>
+            
+            <!-- Accessibility controls -->
+            <div class="accessibility-controls" role="toolbar" aria-label="Accessibility settings">
+                <button type="button" id="toggle-high-contrast" class="btn btn--icon" 
+                        aria-label="Toggle high contrast mode" title="Toggle high contrast mode">
+                    <span class="icon" aria-hidden="true">🌓</span>
+                    <span class="sr-only">High Contrast</span>
+                </button>
+                
+                <button type="button" id="increase-font-size" class="btn btn--icon" 
+                        aria-label="Increase font size" title="Increase font size">
+                    <span class="icon" aria-hidden="true">🔍+</span>
+                    <span class="sr-only">Larger Text</span>
+                </button>
+                
+                <button type="button" id="decrease-font-size" class="btn btn--icon" 
+                        aria-label="Decrease font size" title="Decrease font size">
+                    <span class="icon" aria-hidden="true">🔍-</span>
+                    <span class="sr-only">Smaller Text</span>
+                </button>
+            </div>
+        </div>
+    </header>
+    
+    <!-- Navigation -->
+    <nav role="navigation" class="nav" aria-label="Main navigation">
+        <div class="container">
+            <ul class="nav__list" role="menubar">
+                <li class="nav__item" role="none">
+                    <a href="{{ url_for('index') }}" class="nav__link" role="menuitem"
+                       {% if request.endpoint == 'index' %}aria-current="page"{% endif %}>
+                        <span class="nav__icon" aria-hidden="true">🏠</span>
+                        Dashboard
+                    </a>
+                </li>
+                <li class="nav__item" role="none">
+                    <a href="{{ url_for('connections') }}" class="nav__link" role="menuitem"
+                       {% if request.endpoint == 'connections' %}aria-current="page"{% endif %}>
+                        <span class="nav__icon" aria-hidden="true">🔌</span>
+                        Connections
+                    </a>
+                </li>
+                <li class="nav__item" role="none">
+                    <a href="{{ url_for('help_page') }}" class="nav__link" role="menuitem"
+                       {% if request.endpoint == 'help_page' %}aria-current="page"{% endif %}>
+                        <span class="nav__icon" aria-hidden="true">❓</span>
+                        Help
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+    
+    <!-- Status announcements for screen readers -->
+    <div id="status-announcements" aria-live="polite" aria-atomic="true" class="sr-only"></div>
+    <div id="error-announcements" aria-live="assertive" aria-atomic="true" class="sr-only"></div>
+    
+    <!-- Main content -->
+    <main id="main-content" class="main" tabindex="-1">
+        <div class="container">
+            <!-- Page title -->
+            {% block page_title %}{% endblock %}
+            
+            <!-- Flash messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    <div class="flash-messages" role="alert" aria-label="System messages">
+                        {% for category, message in messages %}
+                            <div class="flash-message flash-message--{{ category }}">
+                                <span class="flash-message__icon" aria-hidden="true">
+                                    {% if category == 'error' %}❌{% elif category == 'warning' %}⚠️{% elif category == 'success' %}✅{% else %}ℹ️{% endif %}
+                                </span>
+                                <span class="flash-message__text">{{ message }}</span>
+                                <button type="button" class="flash-message__close" aria-label="Dismiss message">
+                                    <span aria-hidden="true">×</span>
+                                </button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+            
+            <!-- Page content -->
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer role="contentinfo" class="footer">
+        <div class="container">
+            <div class="footer__content">
+                <p class="footer__text">
+                    © 2025 Accessible MCP Client. 
+                    <a href="https://github.com/your-repo/AccessibleMCPClient" class="footer__link">
+                        View on GitHub
+                    </a>
+                </p>
+                
+                <div class="footer__accessibility">
+                    <p class="footer__compliance">
+                        <span class="compliance-badge" aria-label="Web Content Accessibility Guidelines 2.1 Level AA compliant">
+                            WCAG 2.1 AA
+                        </span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/accessibility.js') }}"></script>
+    
+    <!-- Socket.IO -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script src="{{ url_for('static', filename='js/mcp-client.js') }}"></script>
+    
+    <!-- Additional scripts -->
+    {% block scripts %}{% endblock %}
+</body>
+</html>

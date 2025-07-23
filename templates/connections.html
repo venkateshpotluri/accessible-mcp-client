@@ -1,0 +1,1094 @@
+{% extends "base.html" %}
+
+{% block title %}Server Connections - Accessible MCP Client{% endblock %}
+
+{% block page_title %}
+<header class="page-header">
+    <h1 class="page-title">Server Connections</h1>
+    <p class="page-description">
+        Manage your Model Context Protocol server connections. Add, edit, test, and remove server configurations.
+    </p>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="connections-page">
+    <!-- Add New Server -->
+    <section class="page-section" aria-labelledby="add-server-heading">
+        <header class="section-header">
+            <h2 id="add-server-heading" class="section-title">
+                <span class="section-icon" aria-hidden="true">➕</span>
+                Add New Server
+            </h2>
+            <button type="button" id="toggle-add-form" class="btn btn--primary" 
+                    aria-expanded="false" aria-controls="add-server-form">
+                <span class="btn__icon" aria-hidden="true">➕</span>
+                Add Server
+            </button>
+        </header>
+        
+        <div id="add-server-form" class="form-container" hidden aria-labelledby="add-server-heading">
+            <form id="server-form" class="form" novalidate>
+                <!-- Server Name -->
+                <div class="form-group">
+                    <label for="server-name" class="form-label">
+                        Server Name *
+                    </label>
+                    <input type="text" id="server-name" name="name" class="form-input" 
+                           required aria-describedby="server-name-help">
+                    <div id="server-name-help" class="form-help">
+                        A friendly name to identify this server connection.
+                    </div>
+                    <div class="form-error" role="alert" aria-live="polite"></div>
+                </div>
+                
+                <!-- Transport Type -->
+                <div class="form-group">
+                    <fieldset class="form-fieldset">
+                        <legend class="form-legend">Transport Type *</legend>
+                        <div class="form-radio-group" role="radiogroup" aria-required="true">
+                            <div class="form-radio">
+                                <input type="radio" id="transport-stdio" name="transport_type" 
+                                       value="stdio" class="form-radio-input" required>
+                                <label for="transport-stdio" class="form-radio-label">
+                                    <span class="radio-icon" aria-hidden="true">📝</span>
+                                    Stdio (Standard Input/Output)
+                                </label>
+                            </div>
+                            <div class="form-radio">
+                                <input type="radio" id="transport-http" name="transport_type" 
+                                       value="http" class="form-radio-input" required>
+                                <label for="transport-http" class="form-radio-label">
+                                    <span class="radio-icon" aria-hidden="true">🌐</span>
+                                    HTTP
+                                </label>
+                            </div>
+                            <div class="form-radio">
+                                <input type="radio" id="transport-websocket" name="transport_type" 
+                                       value="websocket" class="form-radio-input" required>
+                                <label for="transport-websocket" class="form-radio-label">
+                                    <span class="radio-icon" aria-hidden="true">🔌</span>
+                                    WebSocket
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-error" role="alert" aria-live="polite"></div>
+                    </fieldset>
+                </div>
+                
+                <!-- Transport-specific configurations -->
+                
+                <!-- Stdio Configuration -->
+                <div id="stdio-config" class="transport-config" hidden>
+                    <h3 class="config-title">Stdio Configuration</h3>
+                    
+                    <div class="form-group">
+                        <label for="stdio-command" class="form-label">
+                            Command *
+                        </label>
+                        <input type="text" id="stdio-command" name="stdio_command" class="form-input" 
+                               aria-describedby="stdio-command-help">
+                        <div id="stdio-command-help" class="form-help">
+                            Path to the MCP server executable (e.g., /usr/local/bin/mcp-server).
+                        </div>
+                        <div class="form-error" role="alert" aria-live="polite"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="stdio-args" class="form-label">
+                            Arguments
+                        </label>
+                        <input type="text" id="stdio-args" name="stdio_args" class="form-input" 
+                               aria-describedby="stdio-args-help">
+                        <div id="stdio-args-help" class="form-help">
+                            Command-line arguments separated by spaces (optional).
+                        </div>
+                        <div class="form-error" role="alert" aria-live="polite"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="stdio-cwd" class="form-label">
+                            Working Directory
+                        </label>
+                        <input type="text" id="stdio-cwd" name="stdio_cwd" class="form-input" 
+                               aria-describedby="stdio-cwd-help">
+                        <div id="stdio-cwd-help" class="form-help">
+                            Working directory for the server process (optional).
+                        </div>
+                        <div class="form-error" role="alert" aria-live="polite"></div>
+                    </div>
+                </div>
+                
+                <!-- HTTP Configuration -->
+                <div id="http-config" class="transport-config" hidden>
+                    <h3 class="config-title">HTTP Configuration</h3>
+                    
+                    <div class="form-group">
+                        <label for="http-url" class="form-label">
+                            Server URL *
+                        </label>
+                        <input type="url" id="http-url" name="http_url" class="form-input" 
+                               placeholder="https://example.com/mcp" aria-describedby="http-url-help">
+                        <div id="http-url-help" class="form-help">
+                            Full URL to the MCP server HTTP endpoint.
+                        </div>
+                        <div class="form-error" role="alert" aria-live="polite"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="http-timeout" class="form-label">
+                            Timeout (seconds)
+                        </label>
+                        <input type="number" id="http-timeout" name="http_timeout" class="form-input" 
+                               value="30" min="1" max="300" aria-describedby="http-timeout-help">
+                        <div id="http-timeout-help" class="form-help">
+                            Request timeout in seconds (default: 30).
+                        </div>
+                        <div class="form-error" role="alert" aria-live="polite"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="http-headers" class="form-label">
+                            Custom Headers
+                        </label>
+                        <textarea id="http-headers" name="http_headers" class="form-textarea" 
+                                  rows="4" aria-describedby="http-headers-help" 
+                                  placeholder='{"Authorization": "Bearer token", "X-Custom": "value"}'></textarea>
+                        <div id="http-headers-help" class="form-help">
+                            JSON object with custom HTTP headers (optional).
+                        </div>
+                        <div class="form-error" role="alert" aria-live="polite"></div>
+                    </div>
+                </div>
+                
+                <!-- WebSocket Configuration -->
+                <div id="websocket-config" class="transport-config" hidden>
+                    <h3 class="config-title">WebSocket Configuration</h3>
+                    
+                    <div class="form-group">
+                        <label for="websocket-url" class="form-label">
+                            WebSocket URL *
+                        </label>
+                        <input type="url" id="websocket-url" name="websocket_url" class="form-input" 
+                               placeholder="wss://example.com/mcp" aria-describedby="websocket-url-help">
+                        <div id="websocket-url-help" class="form-help">
+                            WebSocket URL to the MCP server endpoint.
+                        </div>
+                        <div class="form-error" role="alert" aria-live="polite"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="websocket-protocols" class="form-label">
+                            Sub-protocols
+                        </label>
+                        <input type="text" id="websocket-protocols" name="websocket_protocols" class="form-input" 
+                               aria-describedby="websocket-protocols-help">
+                        <div id="websocket-protocols-help" class="form-help">
+                            WebSocket sub-protocols separated by commas (optional).
+                        </div>
+                        <div class="form-error" role="alert" aria-live="polite"></div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="websocket-headers" class="form-label">
+                            Connection Headers
+                        </label>
+                        <textarea id="websocket-headers" name="websocket_headers" class="form-textarea" 
+                                  rows="4" aria-describedby="websocket-headers-help" 
+                                  placeholder='{"Authorization": "Bearer token"}'></textarea>
+                        <div id="websocket-headers-help" class="form-help">
+                            JSON object with WebSocket connection headers (optional).
+                        </div>
+                        <div class="form-error" role="alert" aria-live="polite"></div>
+                    </div>
+                </div>
+                
+                <!-- Form Actions -->
+                <div class="form-actions">
+                    <button type="button" id="test-connection" class="btn btn--secondary">
+                        <span class="btn__icon" aria-hidden="true">🧪</span>
+                        Test Connection
+                    </button>
+                    <button type="submit" class="btn btn--primary">
+                        <span class="btn__icon" aria-hidden="true">💾</span>
+                        Save Server
+                    </button>
+                    <button type="button" id="cancel-form" class="btn btn--tertiary">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </section>
+    
+    <!-- Existing Servers -->
+    <section class="page-section" aria-labelledby="existing-servers-heading">
+        <header class="section-header">
+            <h2 id="existing-servers-heading" class="section-title">
+                <span class="section-icon" aria-hidden="true">🖥️</span>
+                Configured Servers
+            </h2>
+            <button type="button" id="refresh-servers" class="btn btn--secondary">
+                <span class="btn__icon" aria-hidden="true">🔄</span>
+                Refresh
+            </button>
+        </header>
+        
+        <div id="servers-container" class="servers-container" role="region" aria-live="polite">
+            <div class="loading-state">
+                <div class="loading-spinner" role="status" aria-label="Loading servers">
+                    <span class="sr-only">Loading server configurations...</span>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+
+<!-- Connection Test Modal -->
+<div id="test-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="test-modal-title" aria-hidden="true">
+    <div class="modal__overlay" aria-hidden="true"></div>
+    <div class="modal__container">
+        <header class="modal__header">
+            <h2 id="test-modal-title" class="modal__title">Connection Test</h2>
+            <button type="button" class="modal__close" aria-label="Close modal" data-dismiss="modal">
+                <span aria-hidden="true">×</span>
+            </button>
+        </header>
+        
+        <div class="modal__body">
+            <div id="test-status" class="test-status" role="status" aria-live="polite">
+                <div class="test-progress">
+                    <div class="loading-spinner"></div>
+                    <p>Testing connection...</p>
+                </div>
+            </div>
+            
+            <div id="test-results" class="test-results" hidden>
+                <!-- Test results will be populated here -->
+            </div>
+        </div>
+        
+        <div class="modal__footer">
+            <button type="button" class="btn btn--primary" data-dismiss="modal">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Server Edit Modal -->
+<div id="edit-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="edit-modal-title" aria-hidden="true">
+    <div class="modal__overlay" aria-hidden="true"></div>
+    <div class="modal__container modal__container--large">
+        <header class="modal__header">
+            <h2 id="edit-modal-title" class="modal__title">Edit Server</h2>
+            <button type="button" class="modal__close" aria-label="Close modal" data-dismiss="modal">
+                <span aria-hidden="true">×</span>
+            </button>
+        </header>
+        
+        <div class="modal__body">
+            <form id="edit-server-form" class="form">
+                <!-- Form content will be populated dynamically -->
+            </form>
+        </div>
+        
+        <div class="modal__footer">
+            <button type="submit" form="edit-server-form" class="btn btn--primary">
+                <span class="btn__icon" aria-hidden="true">💾</span>
+                Save Changes
+            </button>
+            <button type="button" class="btn btn--secondary" data-dismiss="modal">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div id="delete-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title" aria-hidden="true">
+    <div class="modal__overlay" aria-hidden="true"></div>
+    <div class="modal__container">
+        <header class="modal__header">
+            <h2 id="delete-modal-title" class="modal__title">Confirm Deletion</h2>
+            <button type="button" class="modal__close" aria-label="Close modal" data-dismiss="modal">
+                <span aria-hidden="true">×</span>
+            </button>
+        </header>
+        
+        <div class="modal__body">
+            <p id="delete-message" class="delete-message">
+                Are you sure you want to delete this server configuration?
+            </p>
+            <div class="delete-warning">
+                <strong>Warning:</strong> This action cannot be undone.
+            </div>
+        </div>
+        
+        <div class="modal__footer">
+            <button type="button" id="confirm-delete" class="btn btn--danger">
+                <span class="btn__icon" aria-hidden="true">🗑️</span>
+                Delete Server
+            </button>
+            <button type="button" class="btn btn--secondary" data-dismiss="modal">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Connections page JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Creating connectionsManager...');
+    window.connectionsManager = new ConnectionsManager();
+    console.log('connectionsManager created:', window.connectionsManager);
+    window.connectionsManager.init();
+    console.log('connectionsManager initialized');
+});
+
+class ConnectionsManager {
+    constructor() {
+        this.servers = new Map();
+        this.currentEditingId = null;
+        this.currentDeletingId = null;
+    }
+    
+    init() {
+        this.setupEventListeners();
+        this.loadServers();
+    }
+    
+    setupEventListeners() {
+        // Toggle add form
+        document.getElementById('toggle-add-form')?.addEventListener('click', () => {
+            this.toggleAddForm();
+        });
+        
+        // Transport type change
+        document.querySelectorAll('input[name="transport_type"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                this.showTransportConfig(radio.value);
+            });
+        });
+        
+        // Form submission
+        document.getElementById('server-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.saveServer();
+        });
+        
+        // Test connection
+        document.getElementById('test-connection')?.addEventListener('click', () => {
+            this.testConnection();
+        });
+        
+        // Cancel form
+        document.getElementById('cancel-form')?.addEventListener('click', () => {
+            this.cancelForm();
+        });
+        
+        // Refresh servers
+        document.getElementById('refresh-servers')?.addEventListener('click', () => {
+            this.loadServers();
+        });
+        
+        // Modal handling
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('[data-dismiss="modal"]') || e.target.closest('[data-dismiss="modal"]')) {
+                this.closeModal(e.target.closest('.modal'));
+            }
+        });
+        
+        // Edit server form
+        document.getElementById('edit-server-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.updateServer();
+        });
+        
+        // Confirm delete
+        document.getElementById('confirm-delete')?.addEventListener('click', () => {
+            this.deleteServer();
+        });
+        
+        // Event delegation for server action buttons
+        document.addEventListener('click', (e) => {
+            const button = e.target.closest('button[data-action]');
+            if (!button) return;
+            
+            const action = button.getAttribute('data-action');
+            const serverId = button.getAttribute('data-server-id');
+            const serverName = button.getAttribute('data-server-name');
+            
+            console.log('Button clicked:', action, serverId);
+            
+            switch (action) {
+                case 'connect':
+                    this.connectServer(serverId);
+                    break;
+                case 'disconnect':
+                    this.disconnectServer(serverId);
+                    break;
+                case 'edit':
+                    this.editServer(serverId);
+                    break;
+                case 'delete':
+                    this.confirmDeleteServer(serverId, serverName);
+                    break;
+            }
+        });
+        
+        // Event delegation for keyboard events
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+                const button = e.target.closest('button[data-action]');
+                if (button) {
+                    e.preventDefault();
+                    button.click();
+                }
+            }
+        });
+    }
+    
+    toggleAddForm() {
+        const button = document.getElementById('toggle-add-form');
+        const form = document.getElementById('add-server-form');
+        
+        if (!button || !form) return;
+        
+        const isExpanded = button.getAttribute('aria-expanded') === 'true';
+        
+        if (isExpanded) {
+            form.hidden = true;
+            button.setAttribute('aria-expanded', 'false');
+            button.innerHTML = '<span class="btn__icon" aria-hidden="true">➕</span> Add Server';
+        } else {
+            form.hidden = false;
+            button.setAttribute('aria-expanded', 'true');
+            button.innerHTML = '<span class="btn__icon" aria-hidden="true">➖</span> Hide Form';
+            
+            // Focus first input
+            const firstInput = form.querySelector('input');
+            if (firstInput) {
+                setTimeout(() => firstInput.focus(), 100);
+            }
+        }
+    }
+    
+    showTransportConfig(transportType) {
+        // Hide all config sections
+        document.querySelectorAll('.transport-config').forEach(config => {
+            config.hidden = true;
+        });
+        
+        // Show selected config
+        const configSection = document.getElementById(`${transportType}-config`);
+        if (configSection) {
+            configSection.hidden = false;
+        }
+        
+        // Update form validation
+        this.updateFormValidation(transportType);
+    }
+    
+    updateFormValidation(transportType) {
+        // Reset all transport-specific fields
+        document.querySelectorAll('.transport-config input, .transport-config textarea').forEach(field => {
+            field.removeAttribute('required');
+        });
+        
+        // Set required fields for selected transport
+        if (transportType === 'stdio') {
+            document.getElementById('stdio-command')?.setAttribute('required', '');
+        } else if (transportType === 'http') {
+            document.getElementById('http-url')?.setAttribute('required', '');
+        } else if (transportType === 'websocket') {
+            document.getElementById('websocket-url')?.setAttribute('required', '');
+        }
+    }
+    
+    async saveServer() {
+        const form = document.getElementById('server-form');
+        if (!form) return;
+        
+        // Validate form
+        if (!this.validateForm(form)) {
+            return;
+        }
+        
+        const formData = new FormData(form);
+        const transportType = formData.get('transport_type');
+        
+        // Build server configuration
+        const serverConfig = {
+            name: formData.get('name'),
+            transport_type: transportType,
+            config: this.buildTransportConfig(transportType, formData)
+        };
+        
+        try {
+            this.announceToScreenReader('Saving server configuration');
+            
+            const response = await fetch('/api/servers', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(serverConfig)
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                this.announceToScreenReader('Server configuration saved successfully');
+                this.resetForm();
+                this.loadServers();
+            } else {
+                throw new Error(result.error || 'Failed to save server');
+            }
+            
+        } catch (error) {
+            console.error('Failed to save server:', error);
+            this.announceError(`Failed to save server: ${error.message}`);
+        }
+    }
+    
+    buildTransportConfig(transportType, formData) {
+        const config = {};
+        
+        if (transportType === 'stdio') {
+            config.command = formData.get('stdio_command');
+            
+            const args = formData.get('stdio_args');
+            if (args) {
+                config.args = args.split(/\s+/).filter(arg => arg);
+            }
+            
+            const cwd = formData.get('stdio_cwd');
+            if (cwd) {
+                config.cwd = cwd;
+            }
+            
+        } else if (transportType === 'http') {
+            config.url = formData.get('http_url');
+            config.timeout = parseInt(formData.get('http_timeout')) || 30;
+            
+            const headers = formData.get('http_headers');
+            if (headers) {
+                try {
+                    config.headers = JSON.parse(headers);
+                } catch (e) {
+                    // Invalid JSON, ignore headers
+                }
+            }
+            
+        } else if (transportType === 'websocket') {
+            config.url = formData.get('websocket_url');
+            
+            const protocols = formData.get('websocket_protocols');
+            if (protocols) {
+                config.protocols = protocols.split(',').map(p => p.trim()).filter(p => p);
+            }
+            
+            const headers = formData.get('websocket_headers');
+            if (headers) {
+                try {
+                    config.headers = JSON.parse(headers);
+                } catch (e) {
+                    // Invalid JSON, ignore headers
+                }
+            }
+        }
+        
+        return config;
+    }
+    
+    validateForm(form) {
+        // Clear previous errors
+        form.querySelectorAll('.form-error').forEach(error => {
+            error.textContent = '';
+        });
+        
+        let isValid = true;
+        
+        // Validate required fields
+        const requiredFields = form.querySelectorAll('[required]');
+        requiredFields.forEach(field => {
+            if (!field.value.trim()) {
+                this.showFieldError(field, 'This field is required');
+                isValid = false;
+            }
+        });
+        
+        // Validate URLs
+        const urlFields = form.querySelectorAll('input[type="url"]');
+        urlFields.forEach(field => {
+            if (field.value && !this.isValidUrl(field.value)) {
+                this.showFieldError(field, 'Please enter a valid URL');
+                isValid = false;
+            }
+        });
+        
+        // Validate JSON fields
+        const jsonFields = form.querySelectorAll('textarea[name$="_headers"]');
+        jsonFields.forEach(field => {
+            if (field.value && !this.isValidJson(field.value)) {
+                this.showFieldError(field, 'Please enter valid JSON');
+                isValid = false;
+            }
+        });
+        
+        return isValid;
+    }
+    
+    showFieldError(field, message) {
+        const errorElement = field.parentElement.querySelector('.form-error');
+        if (errorElement) {
+            errorElement.textContent = message;
+        }
+        
+        field.setAttribute('aria-invalid', 'true');
+        field.focus();
+    }
+    
+    isValidUrl(string) {
+        try {
+            new URL(string);
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
+    
+    isValidJson(string) {
+        try {
+            JSON.parse(string);
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
+    
+    async testConnection() {
+        const form = document.getElementById('server-form');
+        if (!form || !this.validateForm(form)) {
+            return;
+        }
+        
+        const formData = new FormData(form);
+        const transportType = formData.get('transport_type');
+        
+        // Build temporary server config for testing
+        const serverConfig = {
+            name: 'Test Connection',
+            transport_type: transportType,
+            config: this.buildTransportConfig(transportType, formData)
+        };
+        
+        try {
+            // Create temporary server
+            const createResponse = await fetch('/api/servers', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(serverConfig)
+            });
+            
+            const server = await createResponse.json();
+            
+            if (!createResponse.ok) {
+                throw new Error(server.error || 'Failed to create test server');
+            }
+            
+            // Show test modal
+            this.showTestModal();
+            
+            // Test connection
+            const testResponse = await fetch(`/api/servers/${server.id}/test`, {
+                method: 'POST'
+            });
+            
+            const testResult = await testResponse.json();
+            
+            // Show test results
+            this.showTestResults(testResult);
+            
+            // Clean up temporary server
+            await fetch(`/api/servers/${server.id}`, {
+                method: 'DELETE'
+            });
+            
+        } catch (error) {
+            console.error('Connection test failed:', error);
+            this.showTestResults({
+                status: 'error',
+                message: error.message
+            });
+        }
+    }
+    
+    showTestModal() {
+        const modal = document.getElementById('test-modal');
+        const statusElement = document.getElementById('test-status');
+        const resultsElement = document.getElementById('test-results');
+        
+        if (statusElement) statusElement.hidden = false;
+        if (resultsElement) resultsElement.hidden = true;
+        
+        this.showModal(modal);
+    }
+    
+    showTestResults(result) {
+        const statusElement = document.getElementById('test-status');
+        const resultsElement = document.getElementById('test-results');
+        
+        if (statusElement) statusElement.hidden = true;
+        if (resultsElement) {
+            resultsElement.hidden = false;
+            
+            let resultHtml = '';
+            if (result.status === 'success') {
+                resultHtml = `
+                    <div class="test-success">
+                        <h3 class="test-result-title">
+                            <span class="result-icon" aria-hidden="true">✅</span>
+                            Connection Successful
+                        </h3>
+                        <p class="test-result-message">${result.message}</p>
+                        ${result.server_info ? `
+                            <details class="server-info-details">
+                                <summary>Server Information</summary>
+                                <pre class="server-info-data"><code>${JSON.stringify(result.server_info, null, 2)}</code></pre>
+                            </details>
+                        ` : ''}
+                    </div>
+                `;
+            } else {
+                resultHtml = `
+                    <div class="test-error">
+                        <h3 class="test-result-title">
+                            <span class="result-icon" aria-hidden="true">❌</span>
+                            Connection Failed
+                        </h3>
+                        <p class="test-result-message">${result.message}</p>
+                    </div>
+                `;
+            }
+            
+            resultsElement.innerHTML = resultHtml;
+        }
+        
+        this.announceToScreenReader(
+            result.status === 'success' ? 'Connection test successful' : 'Connection test failed'
+        );
+    }
+    
+    resetForm() {
+        const form = document.getElementById('server-form');
+        if (form) {
+            form.reset();
+            
+            // Hide transport configs
+            document.querySelectorAll('.transport-config').forEach(config => {
+                config.hidden = true;
+            });
+            
+            // Clear errors
+            form.querySelectorAll('.form-error').forEach(error => {
+                error.textContent = '';
+            });
+            
+            form.querySelectorAll('[aria-invalid]').forEach(field => {
+                field.removeAttribute('aria-invalid');
+            });
+        }
+        
+        // Hide form
+        this.toggleAddForm();
+    }
+    
+    cancelForm() {
+        this.resetForm();
+    }
+    
+    async loadServers() {
+        try {
+            const response = await fetch('/api/servers');
+            const servers = await response.json();
+            
+            this.updateServersDisplay(servers);
+            
+            // Store servers
+            this.servers.clear();
+            servers.forEach(server => {
+                this.servers.set(server.id, server);
+            });
+            
+        } catch (error) {
+            console.error('Failed to load servers:', error);
+            this.announceError('Failed to load server configurations');
+        }
+    }
+    
+    updateServersDisplay(servers) {
+        const container = document.getElementById('servers-container');
+        if (!container) return;
+        
+        if (!servers.length) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <p>No servers configured yet. Add your first server above.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        const serversHtml = servers.map(server => `
+            <article class="server-card" role="article">
+                <header class="server-card__header">
+                    <h3 class="server-card__name">${server.name}</h3>
+                    <div class="server-card__status">
+                        <span class="status-indicator status-indicator--${server.status}" 
+                              aria-label="Status: ${server.status}"></span>
+                        <span class="server-card__status-text">${server.status}</span>
+                    </div>
+                </header>
+                
+                <div class="server-card__details">
+                    <div class="server-detail">
+                        <span class="detail-label">Transport:</span>
+                        <span class="detail-value">${server.transport_type}</span>
+                    </div>
+                    <div class="server-detail">
+                        <span class="detail-label">Created:</span>
+                        <span class="detail-value">${new Date(server.created_at).toLocaleDateString()}</span>
+                    </div>
+                </div>
+                
+                <div class="server-card__actions">
+                    ${server.status === 'disconnected' ? `
+                        <button type="button" class="btn btn--small btn--primary" 
+                                data-action="connect" data-server-id="${server.id}">
+                            <span class="btn__icon" aria-hidden="true">🔌</span>
+                            Connect
+                        </button>
+                    ` : `
+                        <button type="button" class="btn btn--small btn--secondary" 
+                                data-action="disconnect" data-server-id="${server.id}">
+                            <span class="btn__icon" aria-hidden="true">🔌</span>
+                            Disconnect
+                        </button>
+                    `}
+                    
+                    <button type="button" class="btn btn--small btn--tertiary" 
+                            data-action="edit" data-server-id="${server.id}">
+                        <span class="btn__icon" aria-hidden="true">✏️</span>
+                        Edit
+                    </button>
+                    
+                    <button type="button" class="btn btn--small btn--danger" 
+                            data-action="delete" data-server-id="${server.id}" data-server-name="${server.name}">
+                        <span class="btn__icon" aria-hidden="true">🗑️</span>
+                        Delete
+                    </button>
+                </div>
+            </article>
+        `).join('');
+        
+        container.innerHTML = serversHtml;
+    }
+    
+    async connectServer(serverId) {
+        try {
+            this.announceToScreenReader('Connecting to server');
+            
+            const response = await fetch(`/api/servers/${serverId}/connect`, {
+                method: 'POST'
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                this.announceToScreenReader('Server connected successfully');
+                this.loadServers();
+            } else {
+                throw new Error(result.error || 'Connection failed');
+            }
+            
+        } catch (error) {
+            console.error('Failed to connect:', error);
+            this.announceError(`Failed to connect: ${error.message}`);
+        }
+    }
+    
+    async disconnectServer(serverId) {
+        try {
+            this.announceToScreenReader('Disconnecting from server');
+            
+            const response = await fetch(`/api/servers/${serverId}/disconnect`, {
+                method: 'POST'
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                this.announceToScreenReader('Server disconnected successfully');
+                this.loadServers();
+            } else {
+                throw new Error(result.error || 'Disconnection failed');
+            }
+            
+        } catch (error) {
+            console.error('Failed to disconnect:', error);
+            this.announceError(`Failed to disconnect: ${error.message}`);
+        }
+    }
+    
+    editServer(serverId) {
+        const server = this.servers.get(serverId);
+        if (!server) return;
+        
+        this.currentEditingId = serverId;
+        
+        // Populate edit form
+        this.populateEditForm(server);
+        
+        // Show edit modal
+        const modal = document.getElementById('edit-modal');
+        this.showModal(modal);
+    }
+    
+    populateEditForm(server) {
+        const form = document.getElementById('edit-server-form');
+        if (!form) return;
+        
+        // Generate form HTML based on server configuration
+        // This is a simplified version - you might want to reuse the add form structure
+        form.innerHTML = `
+            <div class="form-group">
+                <label for="edit-server-name" class="form-label">Server Name *</label>
+                <input type="text" id="edit-server-name" name="name" value="${server.name}" 
+                       class="form-input" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Current Configuration:</label>
+                <pre class="config-display"><code>${JSON.stringify(server.config, null, 2)}</code></pre>
+            </div>
+            
+            <p class="form-help">
+                Note: Full configuration editing will be available in a future version. 
+                For now, you can only change the server name.
+            </p>
+        `;
+    }
+    
+    async updateServer() {
+        if (!this.currentEditingId) return;
+        
+        const form = document.getElementById('edit-server-form');
+        const formData = new FormData(form);
+        
+        try {
+            const response = await fetch(`/api/servers/${this.currentEditingId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: formData.get('name')
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                this.announceToScreenReader('Server updated successfully');
+                this.closeModal(document.getElementById('edit-modal'));
+                this.loadServers();
+            } else {
+                throw new Error(result.error || 'Update failed');
+            }
+            
+        } catch (error) {
+            console.error('Failed to update server:', error);
+            this.announceError(`Failed to update server: ${error.message}`);
+        }
+    }
+    
+    confirmDeleteServer(serverId, serverName) {
+        this.currentDeletingId = serverId;
+        
+        const messageElement = document.getElementById('delete-message');
+        if (messageElement) {
+            messageElement.textContent = `Are you sure you want to delete "${serverName}"?`;
+        }
+        
+        const modal = document.getElementById('delete-modal');
+        this.showModal(modal);
+    }
+    
+    async deleteServer() {
+        if (!this.currentDeletingId) return;
+        
+        try {
+            const response = await fetch(`/api/servers/${this.currentDeletingId}`, {
+                method: 'DELETE'
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                this.announceToScreenReader('Server deleted successfully');
+                this.closeModal(document.getElementById('delete-modal'));
+                this.loadServers();
+            } else {
+                throw new Error(result.error || 'Deletion failed');
+            }
+            
+        } catch (error) {
+            console.error('Failed to delete server:', error);
+            this.announceError(`Failed to delete server: ${error.message}`);
+        }
+    }
+    
+    showModal(modal) {
+        if (!modal) return;
+        
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+        
+        // Focus first focusable element
+        const focusable = modal.querySelector('input, textarea, select, button');
+        if (focusable) {
+            setTimeout(() => focusable.focus(), 100);
+        }
+    }
+    
+    closeModal(modal) {
+        if (!modal) return;
+        
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+    }
+    
+    announceToScreenReader(message) {
+        const announcer = document.getElementById('status-announcements');
+        if (announcer) {
+            announcer.textContent = message;
+        }
+    }
+    
+    announceError(message) {
+        const announcer = document.getElementById('error-announcements');
+        if (announcer) {
+            announcer.textContent = message;
+        }
+    }
+}
+
+</script>
+{% endblock %}

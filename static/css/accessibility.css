@@ -1,0 +1,362 @@
+/* ==========================================================================
+   Accessibility Enhancements
+   Additional styles for improved accessibility and usability
+   ========================================================================== */
+
+/* ==========================================================================
+   High Contrast Mode
+   ========================================================================== */
+
+[data-high-contrast="true"] {
+  --color-text: var(--color-hc-text);
+  --color-bg: var(--color-hc-bg);
+  --color-bg-alt: var(--color-hc-bg);
+  --color-bg-dark: var(--color-hc-bg);
+  --color-border: var(--color-hc-border);
+  --color-border-dark: var(--color-hc-border);
+  --color-primary: var(--color-hc-text);
+  --color-primary-dark: var(--color-hc-text);
+  --color-primary-light: var(--color-hc-text);
+  --color-focus: var(--color-hc-focus);
+  --color-focus-outline: var(--color-hc-focus);
+}
+
+[data-high-contrast="true"] .btn--primary {
+  background-color: var(--color-hc-text);
+  border-color: var(--color-hc-text);
+  color: var(--color-hc-bg);
+}
+
+[data-high-contrast="true"] .btn--primary:hover {
+  background-color: var(--color-hc-text);
+  border-color: var(--color-hc-text);
+  color: var(--color-hc-bg);
+  outline: var(--border-width-thick) solid var(--color-hc-text);
+  outline-offset: 2px;
+}
+
+[data-high-contrast="true"] .btn--secondary {
+  background-color: var(--color-hc-bg);
+  border-color: var(--color-hc-text);
+  color: var(--color-hc-text);
+}
+
+[data-high-contrast="true"] .btn--secondary:hover {
+  background-color: var(--color-hc-text);
+  border-color: var(--color-hc-text);
+  color: var(--color-hc-bg);
+}
+
+[data-high-contrast="true"] .nav {
+  background-color: var(--color-hc-text);
+  color: var(--color-hc-bg);
+}
+
+[data-high-contrast="true"] .nav__link {
+  color: var(--color-hc-bg);
+}
+
+[data-high-contrast="true"] .nav__link:hover {
+  background-color: var(--color-hc-bg);
+  color: var(--color-hc-text);
+  outline: var(--border-width-thick) solid var(--color-hc-text);
+  outline-offset: -2px;
+}
+
+[data-high-contrast="true"] .status-indicator {
+  border: var(--border-width-thick) solid var(--color-hc-text);
+}
+
+[data-high-contrast="true"] .status-indicator--connected {
+  background-color: var(--color-hc-text);
+}
+
+[data-high-contrast="true"] .status-indicator--disconnected {
+  background-color: var(--color-hc-bg);
+}
+
+/* ==========================================================================
+   Font Size Scaling
+   ========================================================================== */
+
+[data-font-size="small"] {
+  --font-size-xs: 0.625rem;    /* 10px */
+  --font-size-sm: 0.75rem;     /* 12px */
+  --font-size-base: 0.875rem;  /* 14px */
+  --font-size-lg: 1rem;        /* 16px */
+  --font-size-xl: 1.125rem;    /* 18px */
+  --font-size-2xl: 1.25rem;    /* 20px */
+  --font-size-3xl: 1.5rem;     /* 24px */
+  --font-size-4xl: 1.875rem;   /* 30px */
+}
+
+[data-font-size="large"] {
+  --font-size-xs: 0.875rem;    /* 14px */
+  --font-size-sm: 1rem;        /* 16px */
+  --font-size-base: 1.125rem;  /* 18px */
+  --font-size-lg: 1.25rem;     /* 20px */
+  --font-size-xl: 1.5rem;      /* 24px */
+  --font-size-2xl: 1.75rem;    /* 28px */
+  --font-size-3xl: 2.25rem;    /* 36px */
+  --font-size-4xl: 2.75rem;    /* 44px */
+}
+
+[data-font-size="extra-large"] {
+  --font-size-xs: 1rem;        /* 16px */
+  --font-size-sm: 1.125rem;    /* 18px */
+  --font-size-base: 1.25rem;   /* 20px */
+  --font-size-lg: 1.5rem;      /* 24px */
+  --font-size-xl: 1.75rem;     /* 28px */
+  --font-size-2xl: 2rem;       /* 32px */
+  --font-size-3xl: 2.5rem;     /* 40px */
+  --font-size-4xl: 3rem;       /* 48px */
+}
+
+/* ==========================================================================
+   Focus Enhancements
+   ========================================================================== */
+
+/* Enhanced focus styles for better visibility */
+*:focus {
+  outline: var(--border-width-thick) solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Focus within containers */
+.card:focus-within {
+  box-shadow: var(--shadow-focus);
+}
+
+.form-group:focus-within .form-label {
+  color: var(--color-primary);
+  font-weight: var(--font-weight-bold);
+}
+
+/* ==========================================================================
+   Motion Preferences
+   ========================================================================== */
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  
+  .loading-spinner {
+    animation: none;
+    border-top-color: var(--color-primary);
+  }
+  
+  .status-indicator--loading {
+    animation: none;
+  }
+}
+
+/* ==========================================================================
+   Screen Reader Enhancements
+   ========================================================================== */
+
+/* Improve screen reader experience */
+[aria-busy="true"] {
+  cursor: wait;
+}
+
+[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Live region styling */
+[aria-live] {
+  position: relative;
+}
+
+[aria-live]:not(.sr-only):not(:empty)::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  border: var(--border-width) dashed var(--color-primary);
+  border-radius: var(--border-radius);
+  pointer-events: none;
+  opacity: 0.3;
+}
+
+/* ==========================================================================
+   Keyboard Navigation Enhancements
+   ========================================================================== */
+
+/* Skip to main content improvements */
+.skip-link {
+  font-size: var(--font-size-base);
+  padding: var(--spacing-md);
+}
+
+/* Focus trap for modals */
+.modal[aria-hidden="false"] {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: var(--z-modal);
+}
+
+/* Tab navigation improvements */
+[tabindex="-1"]:focus {
+  outline: none;
+}
+
+/* Focus indicators for custom elements */
+.custom-select:focus,
+.custom-checkbox:focus,
+.custom-radio:focus {
+  outline: var(--border-width-thick) solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* ==========================================================================
+   Error and Success States
+   ========================================================================== */
+
+/* Enhanced error states */
+[aria-invalid="true"] {
+  border-color: var(--color-danger) !important;
+  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25);
+}
+
+[aria-invalid="true"]:focus {
+  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.25), var(--shadow-focus);
+}
+
+/* Success states */
+[aria-invalid="false"] {
+  border-color: var(--color-success);
+}
+
+.success-message {
+  color: var(--color-success-dark);
+  background-color: rgba(40, 167, 69, 0.1);
+  border: var(--border-width) solid var(--color-success);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-md);
+  margin: var(--spacing-md) 0;
+}
+
+/* ==========================================================================
+   Print Styles
+   ========================================================================== */
+
+@media print {
+  /* Hide non-essential elements when printing */
+  .nav,
+  .accessibility-controls,
+  .btn,
+  .modal,
+  .flash-messages {
+    display: none !important;
+  }
+  
+  /* Ensure good contrast for printing */
+  * {
+    background: white !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  
+  /* Show URLs for links */
+  a::after {
+    content: " (" attr(href) ")";
+    font-size: smaller;
+  }
+  
+  /* Page breaks */
+  .page-section {
+    page-break-inside: avoid;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid;
+  }
+}
+
+/* ==========================================================================
+   Dark Mode Support (System Preference)
+   ========================================================================== */
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-text: #f8f9fa;
+    --color-text-muted: #adb5bd;
+    --color-text-light: #868e96;
+    --color-bg: #212529;
+    --color-bg-alt: #343a40;
+    --color-bg-dark: #495057;
+    --color-border: #495057;
+    --color-border-dark: #6c757d;
+    
+    --color-primary: #4dabf7;
+    --color-primary-dark: #339af0;
+    --color-primary-light: #74c0fc;
+  }
+  
+  .nav {
+    background-color: #495057;
+  }
+  
+  .footer {
+    background-color: #343a40;
+  }
+  
+  .card {
+    background-color: var(--color-bg-alt);
+  }
+  
+  .card-header,
+  .card-footer {
+    background-color: var(--color-bg-dark);
+  }
+}
+
+/* ==========================================================================
+   Browser-Specific Fixes
+   ========================================================================== */
+
+/* Firefox focus outline fixes */
+@-moz-document url-prefix() {
+  .btn::-moz-focus-inner {
+    border: 0;
+  }
+  
+  .form-input::-moz-focus-inner,
+  .form-select::-moz-focus-inner,
+  .form-textarea::-moz-focus-inner {
+    border: 0;
+  }
+}
+
+/* Safari input styling fixes */
+@supports (-webkit-appearance: none) {
+  .form-input,
+  .form-select,
+  .form-textarea {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+  
+  .form-select {
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e");
+    background-position: right 0.5rem center;
+    background-repeat: no-repeat;
+    background-size: 1.5em 1.5em;
+    padding-right: 2.5rem;
+  }
+}

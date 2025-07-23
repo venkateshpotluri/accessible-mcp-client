@@ -1,0 +1,600 @@
+{% extends "base.html" %}
+
+{% block title %}Help & Documentation - Accessible MCP Client{% endblock %}
+
+{% block page_title %}
+<header class="page-header">
+    <h1 class="page-title">Help & Documentation</h1>
+    <p class="page-description">
+        Complete guide to using the Accessible MCP Client, including setup instructions, accessibility features, and troubleshooting.
+    </p>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="help-page">
+    <!-- Table of Contents -->
+    <nav class="toc" aria-labelledby="toc-heading">
+        <h2 id="toc-heading" class="toc__title">Table of Contents</h2>
+        <ol class="toc__list">
+            <li><a href="#getting-started" class="toc__link">Getting Started</a></li>
+            <li><a href="#server-setup" class="toc__link">Server Setup</a></li>
+            <li><a href="#using-tools" class="toc__link">Using Tools</a></li>
+            <li><a href="#managing-resources" class="toc__link">Managing Resources</a></li>
+            <li><a href="#accessibility" class="toc__link">Accessibility Features</a></li>
+            <li><a href="#troubleshooting" class="toc__link">Troubleshooting</a></li>
+            <li><a href="#api-reference" class="toc__link">API Reference</a></li>
+        </ol>
+    </nav>
+    
+    <!-- Getting Started -->
+    <section id="getting-started" class="help-section" aria-labelledby="getting-started-heading">
+        <h2 id="getting-started-heading" class="section-title">
+            <span class="section-icon" aria-hidden="true">🚀</span>
+            Getting Started
+        </h2>
+        
+        <div class="help-content">
+            <h3>What is MCP?</h3>
+            <p>
+                The Model Context Protocol (MCP) is a standardized protocol for enabling communication 
+                between language models and external tools, resources, and services. This client provides 
+                an accessible web interface to connect to and interact with MCP servers.
+            </p>
+            
+            <h3>First Steps</h3>
+            <ol class="help-list">
+                <li>
+                    <strong>Add a Server:</strong> Go to the <a href="{{ url_for('connections') }}">Connections</a> 
+                    page and configure your first MCP server connection.
+                </li>
+                <li>
+                    <strong>Test Connection:</strong> Use the "Test Connection" button to verify your server 
+                    configuration before saving.
+                </li>
+                <li>
+                    <strong>Connect:</strong> Once configured, connect to your server to start using its tools 
+                    and resources.
+                </li>
+                <li>
+                    <strong>Explore:</strong> Return to the <a href="{{ url_for('index') }}">Dashboard</a> 
+                    to interact with your connected servers.
+                </li>
+            </ol>
+            
+            <div class="help-tip">
+                <h4><span class="tip-icon" aria-hidden="true">💡</span> Quick Tip</h4>
+                <p>
+                    Start with the stdio transport if you have a local MCP server executable. 
+                    It's the most straightforward way to get started.
+                </p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Server Setup -->
+    <section id="server-setup" class="help-section" aria-labelledby="server-setup-heading">  
+        <h2 id="server-setup-heading" class="section-title">
+            <span class="section-icon" aria-hidden="true">🔧</span>
+            Server Setup
+        </h2>
+        
+        <div class="help-content">
+            <h3>Transport Types</h3>
+            <p>The client supports three transport methods for connecting to MCP servers:</p>
+            
+            <div class="transport-guide">
+                <h4>Stdio (Standard Input/Output)</h4>
+                <p>Best for local MCP server executables that communicate via stdin/stdout.</p>
+                <div class="config-example">
+                    <strong>Required:</strong>
+                    <ul>
+                        <li><strong>Command:</strong> Path to the MCP server executable</li>
+                    </ul>
+                    <strong>Optional:</strong>
+                    <ul>
+                        <li><strong>Arguments:</strong> Command-line arguments</li>
+                        <li><strong>Working Directory:</strong> Directory to run the server in</li>
+                    </ul>
+                </div>
+                
+                <h4>HTTP</h4>
+                <p>For MCP servers that expose an HTTP API endpoint.</p>
+                <div class="config-example">
+                    <strong>Required:</strong>
+                    <ul>
+                        <li><strong>Server URL:</strong> Full HTTP(S) URL to the MCP endpoint</li>
+                    </ul>
+                    <strong>Optional:</strong>
+                    <ul>
+                        <li><strong>Timeout:</strong> Request timeout in seconds (default: 30)</li>
+                        <li><strong>Custom Headers:</strong> JSON object with HTTP headers</li>
+                    </ul>
+                </div>
+                
+                <h4>WebSocket</h4>
+                <p>For real-time communication with WebSocket-enabled MCP servers.</p>
+                <div class="config-example">
+                    <strong>Required:</strong>
+                    <ul>
+                        <li><strong>WebSocket URL:</strong> WS or WSS URL to the MCP endpoint</li>
+                    </ul>
+                    <strong>Optional:</strong>
+                    <ul>
+                        <li><strong>Sub-protocols:</strong> WebSocket sub-protocols</li>
+                        <li><strong>Connection Headers:</strong> JSON object with connection headers</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <h3>Configuration Examples</h3>
+            
+            <div class="config-examples">
+                <h4>Stdio Example</h4>
+                <pre class="code-example"><code>Server Name: Local File System Server
+Transport: stdio
+Command: /usr/local/bin/mcp-filesystem-server
+Arguments: --root /home/user/documents
+Working Directory: /home/user</code></pre>
+                
+                <h4>HTTP Example</h4>
+                <pre class="code-example"><code>Server Name: Remote API Server
+Transport: http
+Server URL: https://api.example.com/mcp
+Timeout: 60
+Custom Headers: {
+  "Authorization": "Bearer your-api-token",
+  "X-Client-Version": "1.0.0"
+}</code></pre>
+                
+                <h4>WebSocket Example</h4>
+                <pre class="code-example"><code>Server Name: Real-time Server
+Transport: websocket
+WebSocket URL: wss://ws.example.com/mcp
+Sub-protocols: mcp-v1
+Connection Headers: {
+  "Authorization": "Bearer your-token"
+}</code></pre>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Using Tools -->
+    <section id="using-tools" class="help-section" aria-labelledby="using-tools-heading">
+        <h2 id="using-tools-heading" class="section-title">
+            <span class="section-icon" aria-hidden="true">🛠️</span>
+            Using Tools
+        </h2>
+        
+        <div class="help-content">
+            <h3>What are MCP Tools?</h3>
+            <p>
+                MCP tools are functions provided by connected servers that you can execute with 
+                custom parameters. Tools can perform various operations like file manipulation, 
+                data processing, API calls, and more.
+            </p>
+            
+            <h3>Executing Tools</h3>
+            <ol class="help-list">
+                <li>Select an active server on the Dashboard</li>
+                <li>Browse the available tools in the "Available Tools" section</li>
+                <li>Click "Execute" on any tool to open the execution dialog</li>
+                <li>Fill in the required parameters (marked with *)</li>
+                <li>Click "Execute Tool" to run the tool</li>
+                <li>View the results in the "Tool Execution" section</li>
+            </ol>
+            
+            <h3>Tool Parameters</h3>
+            <p>
+                Each tool defines its own set of parameters. The interface automatically generates 
+                appropriate input fields based on the parameter types:
+            </p>
+            <ul class="help-list">
+                <li><strong>String:</strong> Text input field</li>
+                <li><strong>Number/Integer:</strong> Number input field</li>
+                <li><strong>Boolean:</strong> Checkbox</li>
+                <li><strong>Object/Array:</strong> Textarea for JSON input</li>
+            </ul>
+            
+            <div class="help-warning">
+                <h4><span class="warning-icon" aria-hidden="true">⚠️</span> Important</h4>
+                <p>
+                    Always review tool parameters carefully before execution. Some tools may 
+                    perform destructive operations or access sensitive data.
+                </p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Managing Resources -->
+    <section id="managing-resources" class="help-section" aria-labelledby="managing-resources-heading">
+        <h2 id="managing-resources-heading" class="section-title">
+            <span class="section-icon" aria-hidden="true">📁</span>
+            Managing Resources
+        </h2>
+        
+        <div class="help-content">
+            <h3>What are MCP Resources?</h3>
+            <p>
+                MCP resources are data sources provided by connected servers. Resources can be 
+                files, database records, API responses, or any other structured data that the 
+                server makes available for reading.
+            </p>
+            
+            <h3>Viewing Resources</h3>
+            <ol class="help-list">
+                <li>Select an active server on the Dashboard</li>
+                <li>Browse available resources in the "Available Resources" section</li>
+                <li>Click "View" on any resource to open the resource viewer</li>
+                <li>Review the resource content in the modal dialog</li>
+                <li>Use the "Download" button to save the resource locally</li>
+            </ol>
+            
+            <h3>Resource Types</h3>
+            <p>Resources can contain different types of content:</p>
+            <ul class="help-list">
+                <li><strong>Text:</strong> Plain text, code, configuration files</li>
+                <li><strong>JSON:</strong> Structured data objects</li>
+                <li><strong>Binary:</strong> Images, documents, or other binary data</li>
+                <li><strong>Custom:</strong> Server-specific data formats</li>
+            </ul>
+            
+            <div class="help-tip">
+                <h4><span class="tip-icon" aria-hidden="true">💡</span> Tip</h4>
+                <p>
+                    Resource URIs are unique identifiers used by the MCP server. They may not 
+                    correspond to actual file paths but are internal references to the data.
+                </p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Accessibility Features -->
+    <section id="accessibility" class="help-section" aria-labelledby="accessibility-heading">
+        <h2 id="accessibility-heading" class="section-title">
+            <span class="section-icon" aria-hidden="true">♿</span>
+            Accessibility Features
+        </h2>
+        
+        <div class="help-content">
+            <h3>WCAG 2.1 AA Compliance</h3>
+            <p>
+                This application is designed to meet Web Content Accessibility Guidelines (WCAG) 2.1 
+                Level AA standards, ensuring it's usable by people with various disabilities.
+            </p>
+            
+            <h3>Screen Reader Support</h3>
+            <ul class="help-list">
+                <li><strong>Semantic HTML:</strong> Proper heading structure and landmark regions</li>
+                <li><strong>ARIA Labels:</strong> Descriptive labels for all interactive elements</li>
+                <li><strong>Live Regions:</strong> Status updates announced to screen readers</li>
+                <li><strong>Focus Management:</strong> Logical focus order and clear focus indicators</li>
+            </ul>
+            
+            <h3>Keyboard Navigation</h3>
+            <ul class="help-list">
+                <li><strong>Tab Navigation:</strong> All functionality accessible via keyboard</li>
+                <li><strong>Skip Links:</strong> Jump directly to main content</li>
+                <li><strong>Modal Management:</strong> Trapped focus in dialogs</li>
+                <li><strong>Escape Key:</strong> Close modals and cancel operations</li>
+            </ul>
+            
+            <h3>Visual Accessibility</h3>
+            <ul class="help-list">
+                <li><strong>High Contrast Mode:</strong> Toggle button in header for enhanced visibility</li>
+                <li><strong>Font Size Controls:</strong> Increase/decrease text size</li>
+                <li><strong>Color Independence:</strong> Information not conveyed by color alone</li>
+                <li><strong>Focus Indicators:</strong> Clear visual focus indicators</li>
+            </ul>
+            
+            <h3>Accessibility Controls</h3>
+            <p>Use the accessibility controls in the header to customize your experience:</p>
+            <ul class="help-list">
+                <li><strong>🌓 High Contrast:</strong> Toggle high contrast color scheme</li>
+                <li><strong>🔍+ Larger Text:</strong> Increase font size</li>
+                <li><strong>🔍- Smaller Text:</strong> Decrease font size</li>
+            </ul>
+            
+            <div class="help-note">
+                <h4><span class="note-icon" aria-hidden="true">ℹ️</span> Note</h4>
+                <p>
+                    Your accessibility preferences are saved in your browser and will be 
+                    remembered for future visits.
+                </p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Troubleshooting -->
+    <section id="troubleshooting" class="help-section" aria-labelledby="troubleshooting-heading">
+        <h2 id="troubleshooting-heading" class="section-title">
+            <span class="section-icon" aria-hidden="true">🔍</span>
+            Troubleshooting
+        </h2>
+        
+        <div class="help-content">
+            <h3>Common Issues</h3>
+            
+            <div class="troubleshooting-item">
+                <h4>Server Connection Failed</h4>
+                <p><strong>Symptoms:</strong> Cannot connect to MCP server, connection test fails</p>
+                <p><strong>Solutions:</strong></p>
+                <ul class="help-list">
+                    <li>Verify the server is running and accessible</li>
+                    <li>Check network connectivity and firewall settings</li>
+                    <li>Ensure the server URL/command path is correct</li>
+                    <li>Verify authentication credentials if required</li>
+                </ul>
+            </div>
+            
+            <div class="troubleshooting-item">
+                <h4>Tool Execution Errors</h4>
+                <p><strong>Symptoms:</strong> Tool calls fail or return error messages</p>
+                <p><strong>Solutions:</strong></p>
+                <ul class="help-list">
+                    <li>Check that all required parameters are provided</li>
+                    <li>Verify parameter values match expected formats</li>
+                    <li>Ensure the server supports the requested tool</li>
+                    <li>Check server logs for detailed error information</li>
+                </ul>
+            </div>
+            
+            <div class="troubleshooting-item">
+                <h4>Resource Loading Issues</h4>
+                <p><strong>Symptoms:</strong> Resources don't load or show "access denied" errors</p>
+                <p><strong>Solutions:</strong></p>
+                <ul class="help-list">
+                    <li>Verify you have permission to access the resource</li>
+                    <li>Check that the resource URI is valid</li>
+                    <li>Ensure the server is still connected</li>
+                    <li>Try refreshing the resource list</li>
+                </ul>
+            </div>
+            
+            <div class="troubleshooting-item">
+                <h4>WebSocket Connection Problems</h4>
+                <p><strong>Symptoms:</strong> WebSocket connections fail or disconnect frequently</p>
+                <p><strong>Solutions:</strong></p>
+                <ul class="help-list">
+                    <li>Check proxy/firewall WebSocket support</li>
+                    <li>Verify the WebSocket URL format (ws:// or wss://)</li>
+                    <li>Test connection from a different network</li>
+                    <li>Consider using HTTP transport as alternative</li>
+                </ul>
+            </div>
+            
+            <h3>Getting Help</h3>
+            <p>If you continue to experience issues:</p>
+            <ol class="help-list">
+                <li>Check the browser's developer console for error messages</li>
+                <li>Review the MCP server's documentation and logs</li>
+                <li>Test with a minimal server configuration</li>
+                <li>Contact the MCP server provider for support</li>
+            </ol>
+            
+            <div class="help-tip">
+                <h4><span class="tip-icon" aria-hidden="true">💡</span> Debug Mode</h4>
+                <p>
+                    Enable debug mode in your browser's developer tools to see detailed 
+                    network requests and WebSocket messages for troubleshooting.
+                </p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- API Reference -->
+    <section id="api-reference" class="help-section" aria-labelledby="api-reference-heading">
+        <h2 id="api-reference-heading" class="section-title">
+            <span class="section-icon" aria-hidden="true">📚</span>
+            API Reference
+        </h2>
+        
+        <div class="help-content">
+            <h3>REST Endpoints</h3>
+            <p>The client provides the following REST API endpoints:</p>
+            
+            <div class="api-endpoint">
+                <h4>Server Management</h4>
+                <div class="endpoint-details">
+                    <code class="http-method">GET</code> <code class="endpoint-url">/api/servers</code>
+                    <p>List all configured servers</p>
+                </div>
+                <div class="endpoint-details">
+                    <code class="http-method">POST</code> <code class="endpoint-url">/api/servers</code>
+                    <p>Create a new server configuration</p>
+                </div>
+                <div class="endpoint-details">
+                    <code class="http-method">PUT</code> <code class="endpoint-url">/api/servers/{id}</code>
+                    <p>Update server configuration</p>
+                </div>
+                <div class="endpoint-details">
+                    <code class="http-method">DELETE</code> <code class="endpoint-url">/api/servers/{id}</code>
+                    <p>Delete server configuration</p>
+                </div>
+            </div>
+            
+            <div class="api-endpoint">
+                <h4>Connection Management</h4>
+                <div class="endpoint-details">
+                    <code class="http-method">POST</code> <code class="endpoint-url">/api/servers/{id}/connect</code>
+                    <p>Connect to MCP server</p>
+                </div>
+                <div class="endpoint-details">
+                    <code class="http-method">POST</code> <code class="endpoint-url">/api/servers/{id}/disconnect</code>
+                    <p>Disconnect from MCP server</p>
+                </div>
+                <div class="endpoint-details">
+                    <code class="http-method">POST</code> <code class="endpoint-url">/api/servers/{id}/test</code>
+                    <p>Test server connection</p>
+                </div>
+            </div>
+            
+            <div class="api-endpoint">
+                <h4>MCP Operations</h4>
+                <div class="endpoint-details">
+                    <code class="http-method">GET</code> <code class="endpoint-url">/api/mcp/{id}/tools</code>
+                    <p>List available tools</p>
+                </div>
+                <div class="endpoint-details">
+                    <code class="http-method">POST</code> <code class="endpoint-url">/api/mcp/{id}/tools/call</code>
+                    <p>Execute a tool</p>
+                </div>
+                <div class="endpoint-details">
+                    <code class="http-method">GET</code> <code class="endpoint-url">/api/mcp/{id}/resources</code>
+                    <p>List available resources</p>
+                </div>
+                <div class="endpoint-details">
+                    <code class="http-method">POST</code> <code class="endpoint-url">/api/mcp/{id}/resources/read</code>
+                    <p>Read a resource</p>
+                </div>
+            </div>
+            
+            <h3>WebSocket Events</h3>
+            <p>Real-time communication via WebSocket:</p>
+            <ul class="help-list">
+                <li><strong>connect:</strong> Client connected to WebSocket</li>
+                <li><strong>disconnect:</strong> Client disconnected from WebSocket</li>
+                <li><strong>join_server:</strong> Join a server room for updates</li>
+                <li><strong>leave_server:</strong> Leave a server room</li>
+                <li><strong>server_status_changed:</strong> Server status updated</li>
+            </ul>
+            
+            <h3>Response Formats</h3>
+            <p>All API responses follow standard HTTP status codes:</p>
+            <ul class="help-list">
+                <li><strong>200 OK:</strong> Request successful</li>
+                <li><strong>201 Created:</strong> Resource created successfully</li>
+                <li><strong>400 Bad Request:</strong> Invalid request parameters</li>
+                <li><strong>404 Not Found:</strong> Resource not found</li>
+                <li><strong>500 Internal Server Error:</strong> Server error</li>
+            </ul>
+            
+            <div class="api-example">
+                <h4>Example Response</h4>
+                <pre class="code-example"><code>{
+  "id": "server-123",
+  "name": "My MCP Server",
+  "transport_type": "http",
+  "status": "connected",
+  "config": {
+    "url": "https://api.example.com/mcp",
+    "timeout": 30
+  }
+}</code></pre>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Help page enhancements
+document.addEventListener('DOMContentLoaded', function() {
+    // Smooth scrolling for table of contents links
+    document.querySelectorAll('.toc__link').forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            const targetId = this.getAttribute('href').substring(1);
+            const targetElement = document.getElementById(targetId);
+            
+            if (targetElement) {
+                targetElement.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'start'
+                });
+                
+                // Update focus for accessibility
+                targetElement.tabIndex = -1;
+                targetElement.focus();
+            }
+        });
+    });
+    
+    // Highlight current section in table of contents
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            const id = entry.target.getAttribute('id');
+            const tocLink = document.querySelector(`.toc__link[href="#${id}"]`);
+            
+            if (entry.isIntersecting) {
+                // Remove active class from all links
+                document.querySelectorAll('.toc__link').forEach(link => {
+                    link.classList.remove('toc__link--active');
+                });
+                
+                // Add active class to current link
+                if (tocLink) {
+                    tocLink.classList.add('toc__link--active');
+                }
+            }
+        });
+    }, {
+        rootMargin: '-20% 0px -70% 0px'
+    });
+    
+    // Observe all help sections
+    document.querySelectorAll('.help-section').forEach(section => {
+        observer.observe(section);
+    });
+    
+    // Copy code examples to clipboard
+    document.querySelectorAll('.code-example').forEach(codeBlock => {
+        const copyButton = document.createElement('button');
+        copyButton.className = 'copy-code-btn';
+        copyButton.innerHTML = '<span aria-hidden="true">📋</span> Copy';
+        copyButton.setAttribute('aria-label', 'Copy code to clipboard');
+        
+        copyButton.addEventListener('click', async () => {
+            try {
+                await navigator.clipboard.writeText(codeBlock.textContent);
+                copyButton.innerHTML = '<span aria-hidden="true">✅</span> Copied!';
+                
+                setTimeout(() => {
+                    copyButton.innerHTML = '<span aria-hidden="true">📋</span> Copy';
+                }, 2000);
+                
+                // Announce to screen readers
+                const announcer = document.getElementById('status-announcements');
+                if (announcer) {
+                    announcer.textContent = 'Code copied to clipboard';
+                }
+            } catch (err) {
+                console.error('Failed to copy code:', err);
+                copyButton.innerHTML = '<span aria-hidden="true">❌</span> Failed';
+                
+                setTimeout(() => {
+                    copyButton.innerHTML = '<span aria-hidden="true">📋</span> Copy';
+                }, 2000);
+            }
+        });
+        
+        // Create wrapper and add button
+        const wrapper = document.createElement('div');
+        wrapper.className = 'code-example-wrapper';
+        codeBlock.parentNode.insertBefore(wrapper, codeBlock);
+        wrapper.appendChild(codeBlock);
+        wrapper.appendChild(copyButton);
+    });
+    
+    // Expand/collapse functionality for detailed sections
+    document.querySelectorAll('.troubleshooting-item h4, .api-endpoint h4').forEach(heading => {
+        heading.addEventListener('click', function() {
+            const content = this.nextElementSibling;
+            const isExpanded = this.getAttribute('aria-expanded') === 'true';
+            
+            this.setAttribute('aria-expanded', !isExpanded);
+            
+            if (content) {
+                content.style.display = isExpanded ? 'none' : 'block';
+            }
+        });
+        
+        // Set initial state
+        heading.setAttribute('aria-expanded', 'true');
+        heading.style.cursor = 'pointer';
+        heading.innerHTML += ' <span class="expand-icon" aria-hidden="true">▼</span>';
+    });
+});
+</script>
+{% endblock %}

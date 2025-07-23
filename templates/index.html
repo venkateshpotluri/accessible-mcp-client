@@ -1,0 +1,742 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Accessible MCP Client{% endblock %}
+
+{% block page_title %}
+<header class="page-header">
+    <h1 class="page-title">MCP Client Dashboard</h1>
+    <p class="page-description">
+        Manage your Model Context Protocol server connections and interact with tools and resources.
+    </p>
+</header>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard">
+    <!-- Connection Status -->
+    <section class="dashboard-section" aria-labelledby="connection-status-heading">
+        <h2 id="connection-status-heading" class="section-title">
+            <span class="section-icon" aria-hidden="true">🔌</span>
+            Connection Status
+        </h2>
+        
+        <div id="connection-status" class="connection-status" role="region" aria-live="polite">
+            <div class="status-card status-card--loading">
+                <div class="status-indicator" aria-hidden="true"></div>
+                <div class="status-content">
+                    <h3 class="status-title">Loading...</h3>
+                    <p class="status-description">Checking server connections</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section-actions">
+            <a href="{{ url_for('connections') }}" class="btn btn--primary">
+                <span class="btn__icon" aria-hidden="true">⚙️</span>
+                Manage Connections
+            </a>
+            <button type="button" id="refresh-connections" class="btn btn--secondary">
+                <span class="btn__icon" aria-hidden="true">🔄</span>
+                Refresh
+            </button>
+        </div>
+    </section>
+    
+    <!-- Active Server -->
+    <section class="dashboard-section" aria-labelledby="active-server-heading">
+        <h2 id="active-server-heading" class="section-title">
+            <span class="section-icon" aria-hidden="true">🖥️</span>
+            Active Server
+        </h2>
+        
+        <div class="server-selector">
+            <label for="active-server-select" class="form-label">
+                Select active MCP server:
+            </label>
+            <select id="active-server-select" class="form-select" aria-describedby="server-select-help">
+                <option value="">No server selected</option>
+            </select>
+            <div id="server-select-help" class="form-help">
+                Choose a connected server to interact with its tools and resources.
+            </div>
+        </div>
+        
+        <div id="server-info" class="server-info" role="region" aria-live="polite">
+            <div class="info-placeholder">
+                <p>Select a server to view its information and capabilities.</p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Tools -->
+    <section class="dashboard-section" aria-labelledby="tools-heading">
+        <h2 id="tools-heading" class="section-title">
+            <span class="section-icon" aria-hidden="true">🛠️</span>
+            Available Tools
+        </h2>
+        
+        <div id="tools-container" class="tools-container" role="region" aria-live="polite">
+            <div class="empty-state">
+                <p>Select an active server to view available tools.</p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Resources -->
+    <section class="dashboard-section" aria-labelledby="resources-heading">
+        <h2 id="resources-heading" class="section-title">
+            <span class="section-icon" aria-hidden="true">📁</span>
+            Available Resources
+        </h2>
+        
+        <div id="resources-container" class="resources-container" role="region" aria-live="polite">
+            <div class="empty-state">
+                <p>Select an active server to view available resources.</p>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Tool Execution -->
+    <section class="dashboard-section" aria-labelledby="tool-execution-heading">
+        <h2 id="tool-execution-heading" class="section-title">
+            <span class="section-icon" aria-hidden="true">⚡</span>
+            Tool Execution
+        </h2>
+        
+        <div id="tool-execution-container" class="tool-execution">
+            <div class="empty-state">
+                <p>Select a tool to execute it with custom parameters.</p>
+            </div>
+        </div>
+        
+        <!-- Execution Results -->
+        <div id="execution-results" class="execution-results" role="region" aria-live="polite">
+            <!-- Results will be populated here -->
+        </div>
+    </section>
+</div>
+
+<!-- Tool Execution Modal -->
+<div id="tool-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="tool-modal-title" aria-hidden="true">
+    <div class="modal__overlay" aria-hidden="true"></div>
+    <div class="modal__container">
+        <header class="modal__header">
+            <h2 id="tool-modal-title" class="modal__title">Execute Tool</h2>
+            <button type="button" class="modal__close" aria-label="Close modal" data-dismiss="modal">
+                <span aria-hidden="true">×</span>
+            </button>
+        </header>
+        
+        <div class="modal__body">
+            <form id="tool-execution-form" class="form">
+                <div class="form-group">
+                    <label for="tool-name" class="form-label">Tool Name:</label>
+                    <input type="text" id="tool-name" name="tool-name" class="form-input" readonly>
+                </div>
+                
+                <div class="form-group">
+                    <label for="tool-description" class="form-label">Description:</label>
+                    <div id="tool-description" class="tool-description"></div>
+                </div>
+                
+                <div id="tool-parameters" class="tool-parameters">
+                    <!-- Parameters will be populated dynamically -->
+                </div>
+                
+                <div class="form-actions">
+                    <button type="submit" class="btn btn--primary">
+                        <span class="btn__icon" aria-hidden="true">▶️</span>
+                        Execute Tool
+                    </button>
+                    <button type="button" class="btn btn--secondary" data-dismiss="modal">
+                        Cancel
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Resource Viewer Modal -->
+<div id="resource-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="resource-modal-title" aria-hidden="true">
+    <div class="modal__overlay" aria-hidden="true"></div>
+    <div class="modal__container modal__container--large">
+        <header class="modal__header">
+            <h2 id="resource-modal-title" class="modal__title">View Resource</h2>
+            <button type="button" class="modal__close" aria-label="Close modal" data-dismiss="modal">
+                <span aria-hidden="true">×</span>
+            </button>
+        </header>
+        
+        <div class="modal__body">
+            <div id="resource-info" class="resource-info">
+                <div class="form-group">
+                    <label class="form-label">Resource URI:</label>
+                    <div id="resource-uri" class="resource-detail"></div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">MIME Type:</label>
+                    <div id="resource-mime-type" class="resource-detail"></div>
+                </div>
+            </div>
+            
+            <div id="resource-content" class="resource-content">
+                <div class="loading-spinner" role="status" aria-label="Loading resource content">
+                    <span class="sr-only">Loading...</span>
+                </div>
+            </div>
+            
+            <div class="modal__actions">
+                <button type="button" id="download-resource" class="btn btn--secondary">
+                    <span class="btn__icon" aria-hidden="true">💾</span>
+                    Download
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Dashboard JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    const dashboard = new MCPDashboard();
+    dashboard.init();
+});
+
+class MCPDashboard {
+    constructor() {
+        this.activeServerId = null;
+        this.servers = new Map();
+        this.tools = new Map();
+        this.resources = new Map();
+    }
+    
+    init() {
+        this.setupEventListeners();
+        this.loadServers();
+        this.setupWebSocket();
+    }
+    
+    setupEventListeners() {
+        // Refresh connections
+        document.getElementById('refresh-connections')?.addEventListener('click', () => {
+            this.loadServers();
+            this.announceToScreenReader('Refreshing server connections');
+        });
+        
+        // Server selection
+        document.getElementById('active-server-select')?.addEventListener('change', (e) => {
+            this.setActiveServer(e.target.value);
+        });
+        
+        // Modal handling
+        document.addEventListener('click', (e) => {
+            if (e.target.matches('[data-dismiss="modal"]') || e.target.closest('[data-dismiss="modal"]')) {
+                this.closeModal(e.target.closest('.modal'));
+            }
+        });
+        
+        // Tool execution form
+        document.getElementById('tool-execution-form')?.addEventListener('submit', (e) => {
+            e.preventDefault();
+            this.executeTool();
+        });
+    }
+    
+    setupWebSocket() {
+        if (typeof io !== 'undefined') {
+            this.socket = io();
+            
+            this.socket.on('connect', () => {
+                console.log('Connected to WebSocket');
+            });
+            
+            this.socket.on('server_status_changed', (data) => {
+                this.handleServerStatusChange(data);
+            });
+        }
+    }
+    
+    async loadServers() {
+        try {
+            const response = await fetch('/api/servers');
+            const servers = await response.json();
+            
+            this.updateConnectionStatus(servers);
+            this.updateServerSelect(servers);
+            
+            // Store servers
+            this.servers.clear();
+            servers.forEach(server => {
+                this.servers.set(server.id, server);
+            });
+            
+        } catch (error) {
+            console.error('Failed to load servers:', error);
+            this.announceError('Failed to load server connections');
+        }
+    }
+    
+    updateConnectionStatus(servers) {
+        const container = document.getElementById('connection-status');
+        if (!container) return;
+        
+        const connectedServers = servers.filter(s => s.status === 'connected');
+        const totalServers = servers.length;
+        
+        let statusClass = 'status-card--disconnected';
+        let statusText = 'Disconnected';
+        let statusDescription = 'No servers connected';
+        
+        if (connectedServers.length > 0) {
+            statusClass = 'status-card--connected';
+            statusText = 'Connected';
+            statusDescription = `${connectedServers.length} of ${totalServers} servers connected`;
+        }
+        
+        container.innerHTML = `
+            <div class="status-card ${statusClass}">
+                <div class="status-indicator" aria-hidden="true"></div>
+                <div class="status-content">
+                    <h3 class="status-title">${statusText}</h3>
+                    <p class="status-description">${statusDescription}</p>
+                </div>
+            </div>
+        `;
+    }
+    
+    updateServerSelect(servers) {
+        const select = document.getElementById('active-server-select');
+        if (!select) return;
+        
+        const currentValue = select.value;
+        
+        // Clear options except the first one
+        select.innerHTML = '<option value="">No server selected</option>';
+        
+        // Add connected servers
+        const connectedServers = servers.filter(s => s.status === 'connected');
+        connectedServers.forEach(server => {
+            const option = document.createElement('option');
+            option.value = server.id;
+            option.textContent = server.name;
+            select.appendChild(option);
+        });
+        
+        // Restore selection if still valid
+        if (currentValue && connectedServers.some(s => s.id === currentValue)) {
+            select.value = currentValue;
+        }
+    }
+    
+    async setActiveServer(serverId) {
+        this.activeServerId = serverId;
+        
+        if (!serverId) {
+            this.clearServerInfo();
+            this.clearTools();
+            this.clearResources();
+            return;
+        }
+        
+        const server = this.servers.get(serverId);
+        if (!server) return;
+        
+        try {
+            // Update server info
+            this.updateServerInfo(server);
+            
+            // Load tools and resources
+            await Promise.all([
+                this.loadTools(serverId),
+                this.loadResources(serverId)
+            ]);
+            
+            this.announceToScreenReader(`Active server changed to ${server.name}`);
+            
+        } catch (error) {
+            console.error('Failed to set active server:', error);
+            this.announceError('Failed to load server information');
+        }
+    }
+    
+    updateServerInfo(server) {
+        const container = document.getElementById('server-info');
+        if (!container) return;
+        
+        container.innerHTML = `
+            <div class="server-details">
+                <h3 class="server-name">${server.name}</h3>
+                <div class="server-meta">
+                    <span class="server-transport">
+                        <strong>Transport:</strong> ${server.transport_type}
+                    </span>
+                    <span class="server-status server-status--${server.status}">
+                        <strong>Status:</strong> ${server.status}
+                    </span>
+                </div>
+            </div>
+        `;
+    }
+    
+    clearServerInfo() {
+        const container = document.getElementById('server-info');
+        if (container) {
+            container.innerHTML = `
+                <div class="info-placeholder">
+                    <p>Select a server to view its information and capabilities.</p>
+                </div>
+            `;
+        }
+    }
+    
+    async loadTools(serverId) {
+        try {
+            const response = await fetch(`/api/mcp/${serverId}/tools`);
+            const data = await response.json();
+            
+            if (response.ok) {
+                this.updateToolsDisplay(data.tools || []);
+            } else {
+                throw new Error(data.error || 'Failed to load tools');
+            }
+            
+        } catch (error) {
+            console.error('Failed to load tools:', error);
+            this.clearTools();
+        }
+    }
+    
+    updateToolsDisplay(tools) {
+        const container = document.getElementById('tools-container');
+        if (!container) return;
+        
+        if (!tools.length) {
+            container.innerHTML = '<div class="empty-state"><p>No tools available.</p></div>';
+            return;
+        }
+        
+        const toolsHtml = tools.map(tool => `
+            <div class="tool-card" role="article">
+                <div class="tool-header">
+                    <h3 class="tool-name">${tool.name}</h3>
+                    <button type="button" class="btn btn--small btn--primary" 
+                            onclick="dashboard.openToolModal('${tool.name}')">
+                        <span class="btn__icon" aria-hidden="true">▶️</span>
+                        Execute
+                    </button>
+                </div>
+                <p class="tool-description">${tool.description || 'No description available'}</p>
+            </div>
+        `).join('');
+        
+        container.innerHTML = toolsHtml;
+        
+        // Store tools for later use
+        this.tools.clear();
+        tools.forEach(tool => {
+            this.tools.set(tool.name, tool);
+        });
+    }
+    
+    clearTools() {
+        const container = document.getElementById('tools-container');
+        if (container) {
+            container.innerHTML = '<div class="empty-state"><p>Select an active server to view available tools.</p></div>';
+        }
+        this.tools.clear();
+    }
+    
+    async loadResources(serverId) {
+        try {
+            const response = await fetch(`/api/mcp/${serverId}/resources`);
+            const data = await response.json();
+            
+            if (response.ok) {
+                this.updateResourcesDisplay(data.resources || []);
+            } else {
+                throw new Error(data.error || 'Failed to load resources');
+            }
+            
+        } catch (error) {
+            console.error('Failed to load resources:', error);
+            this.clearResources();
+        }
+    }
+    
+    updateResourcesDisplay(resources) {
+        const container = document.getElementById('resources-container');
+        if (!container) return;
+        
+        if (!resources.length) {
+            container.innerHTML = '<div class="empty-state"><p>No resources available.</p></div>';
+            return;
+        }
+        
+        const resourcesHtml = resources.map(resource => `
+            <div class="resource-card" role="article">
+                <div class="resource-header">
+                    <h3 class="resource-name">${resource.name}</h3>
+                    <button type="button" class="btn btn--small btn--secondary" 
+                            onclick="dashboard.openResourceModal('${resource.uri}')">
+                        <span class="btn__icon" aria-hidden="true">👁️</span>
+                        View
+                    </button>
+                </div>
+                <div class="resource-meta">
+                    <span class="resource-uri">${resource.uri}</span>
+                    ${resource.mimeType ? `<span class="resource-mime-type">${resource.mimeType}</span>` : ''}
+                </div>
+                ${resource.description ? `<p class="resource-description">${resource.description}</p>` : ''}
+            </div>
+        `).join('');
+        
+        container.innerHTML = resourcesHtml;
+        
+        // Store resources for later use
+        this.resources.clear();
+        resources.forEach(resource => {
+            this.resources.set(resource.uri, resource);
+        });
+    }
+    
+    clearResources() {
+        const container = document.getElementById('resources-container');
+        if (container) {
+            container.innerHTML = '<div class="empty-state"><p>Select an active server to view available resources.</p></div>';
+        }
+        this.resources.clear();
+    }
+    
+    openToolModal(toolName) {
+        const tool = this.tools.get(toolName);
+        if (!tool) return;
+        
+        const modal = document.getElementById('tool-modal');
+        const titleElement = document.getElementById('tool-modal-title');
+        const nameInput = document.getElementById('tool-name');
+        const descriptionDiv = document.getElementById('tool-description');
+        const parametersDiv = document.getElementById('tool-parameters');
+        
+        if (titleElement) titleElement.textContent = `Execute ${toolName}`;
+        if (nameInput) nameInput.value = toolName;
+        if (descriptionDiv) descriptionDiv.textContent = tool.description || 'No description available';
+        
+        // Generate parameter inputs
+        if (parametersDiv) {
+            parametersDiv.innerHTML = this.generateParameterInputs(tool.inputSchema);
+        }
+        
+        this.showModal(modal);
+    }
+    
+    generateParameterInputs(schema) {
+        if (!schema || !schema.properties) {
+            return '<p class="form-help">This tool requires no parameters.</p>';
+        }
+        
+        const properties = schema.properties;
+        const required = schema.required || [];
+        
+        return Object.entries(properties).map(([name, prop]) => {
+            const isRequired = required.includes(name);
+            const fieldId = `param-${name}`;
+            
+            let input = '';
+            if (prop.type === 'string') {
+                input = `<input type="text" id="${fieldId}" name="${name}" class="form-input" ${isRequired ? 'required' : ''}>`;
+            } else if (prop.type === 'number' || prop.type === 'integer') {
+                input = `<input type="number" id="${fieldId}" name="${name}" class="form-input" ${isRequired ? 'required' : ''}>`;
+            } else if (prop.type === 'boolean') {
+                input = `<input type="checkbox" id="${fieldId}" name="${name}" class="form-checkbox">`;
+            } else {
+                input = `<textarea id="${fieldId}" name="${name}" class="form-textarea" rows="3" ${isRequired ? 'required' : ''}></textarea>`;
+            }
+            
+            return `
+                <div class="form-group">
+                    <label for="${fieldId}" class="form-label">
+                        ${name}${isRequired ? ' *' : ''}
+                    </label>
+                    ${input}
+                    ${prop.description ? `<div class="form-help">${prop.description}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+    
+    async executeTool() {
+        if (!this.activeServerId) return;
+        
+        const form = document.getElementById('tool-execution-form');
+        const formData = new FormData(form);
+        const toolName = formData.get('tool-name');
+        
+        // Build arguments object
+        const toolArguments = {};
+        for (let [key, value] of formData.entries()) {
+            if (key !== 'tool-name') {
+                toolArguments[key] = value;
+            }
+        }
+        
+        try {
+            this.announceToScreenReader(`Executing tool ${toolName}`);
+            
+            const response = await fetch(`/api/mcp/${this.activeServerId}/tools/call`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: toolName,
+                    arguments: toolArguments
+                })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok) {
+                this.displayExecutionResult(toolName, result);
+                this.closeModal(document.getElementById('tool-modal'));
+                this.announceToScreenReader(`Tool ${toolName} executed successfully`);
+            } else {
+                throw new Error(result.error || 'Tool execution failed');
+            }
+            
+        } catch (error) {
+            console.error('Tool execution failed:', error);
+            this.announceError(`Tool execution failed: ${error.message}`);
+        }
+    }
+    
+    displayExecutionResult(toolName, result) {
+        const container = document.getElementById('execution-results');
+        if (!container) return;
+        
+        const resultHtml = `
+            <div class="execution-result" role="article">
+                <header class="result-header">
+                    <h3 class="result-title">
+                        <span class="result-icon" aria-hidden="true">✅</span>
+                        ${toolName} - Execution Complete
+                    </h3>
+                    <time class="result-timestamp">${new Date().toLocaleString()}</time>
+                </header>
+                <div class="result-content">
+                    <pre class="result-data"><code>${JSON.stringify(result, null, 2)}</code></pre>
+                </div>
+            </div>
+        `;
+        
+        container.insertAdjacentHTML('afterbegin', resultHtml);
+    }
+    
+    async openResourceModal(resourceUri) {
+        const resource = this.resources.get(resourceUri);
+        if (!resource) return;
+        
+        const modal = document.getElementById('resource-modal');
+        const titleElement = document.getElementById('resource-modal-title');
+        const uriElement = document.getElementById('resource-uri');
+        const mimeTypeElement = document.getElementById('resource-mime-type');
+        const contentElement = document.getElementById('resource-content');
+        
+        if (titleElement) titleElement.textContent = resource.name;
+        if (uriElement) uriElement.textContent = resourceUri;
+        if (mimeTypeElement) mimeTypeElement.textContent = resource.mimeType || 'Unknown';
+        
+        this.showModal(modal);
+        
+        // Load resource content
+        try {
+            const response = await fetch(`/api/mcp/${this.activeServerId}/resources/read`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ uri: resourceUri })
+            });
+            
+            const result = await response.json();
+            
+            if (response.ok && contentElement) {
+                let contentHtml = '';
+                
+                if (result.contents) {
+                    result.contents.forEach(content => {
+                        if (content.type === 'text') {
+                            contentHtml += `<pre class="resource-text"><code>${content.text}</code></pre>`;
+                        } else if (content.type === 'blob') {
+                            contentHtml += `<div class="resource-blob">Binary content (${content.blob.length} bytes)</div>`;
+                        }
+                    });
+                }
+                
+                contentElement.innerHTML = contentHtml || '<p>No content available</p>';
+            } else {
+                throw new Error(result.error || 'Failed to load resource');
+            }
+            
+        } catch (error) {
+            console.error('Failed to load resource:', error);
+            if (contentElement) {
+                contentElement.innerHTML = `<p class="error">Failed to load resource content: ${error.message}</p>`;
+            }
+        }
+    }
+    
+    showModal(modal) {
+        if (!modal) return;
+        
+        modal.style.display = 'flex';
+        modal.setAttribute('aria-hidden', 'false');
+        
+        // Focus first focusable element
+        const focusable = modal.querySelector('input, textarea, select, button');
+        if (focusable) {
+            setTimeout(() => focusable.focus(), 100);
+        }
+    }
+    
+    closeModal(modal) {
+        if (!modal) return;
+        
+        modal.style.display = 'none';
+        modal.setAttribute('aria-hidden', 'true');
+    }
+    
+    handleServerStatusChange(data) {
+        // Handle real-time server status updates
+        if (this.servers.has(data.serverId)) {
+            const server = this.servers.get(data.serverId);
+            server.status = data.status;
+            this.servers.set(data.serverId, server);
+            
+            // Refresh UI
+            this.loadServers();
+        }
+    }
+    
+    announceToScreenReader(message) {
+        const announcer = document.getElementById('status-announcements');
+        if (announcer) {
+            announcer.textContent = message;
+        }
+    }
+    
+    announceError(message) {
+        const announcer = document.getElementById('error-announcements');
+        if (announcer) {
+            announcer.textContent = message;
+        }
+    }
+}
+
+// Make dashboard globally available
+window.dashboard = null;
+</script>
+{% endblock %}
