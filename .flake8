@@ -13,8 +13,8 @@ exclude =
     venv,
     env
 extend-ignore = 
-    E203,  # whitespace before ':'
-    W503,  # line break before binary operator
+    E203,
+    W503
 per-file-ignores =
     test_direct_client.py:F401,E402
     test_flask_api.py:F401,E402

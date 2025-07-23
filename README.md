@@ -156,10 +156,36 @@ Create a `config.json` file in the root directory:
 }
 ```
 
+## CI/CD Pipeline
+
+This repository includes an automated CI/CD pipeline that:
+
+- **Automated Testing**: Runs comprehensive tests on Python 3.8-3.12
+- **Code Quality**: Linting with flake8, formatting with black, import sorting with isort
+- **Coverage Reports**: Generates and uploads test coverage data
+- **Email Notifications**: Sends detailed success/failure notifications
+- **Multi-Platform**: Ensures compatibility across different Python versions
+
+The pipeline triggers on pushes to `main`/`develop` branches and pull requests. For setup instructions, see [CI_CD_SETUP.md](CI_CD_SETUP.md).
+
 ## Testing
 
-### Running Tests
+### Automated Testing (CI/CD)
+
+This repository includes a comprehensive CI/CD pipeline that automatically:
+- Runs tests on multiple Python versions (3.8-3.12)
+- Performs code quality checks (linting, formatting)
+- Generates coverage reports
+- Sends email notifications on success/failure
+
+See [CI_CD_SETUP.md](CI_CD_SETUP.md) for detailed setup instructions.
+
+### Running Tests Locally
+
 ```bash
+# Install test dependencies
+pip install -r requirements-dev.txt
+
 # Run all tests
 python -m pytest tests/
 
