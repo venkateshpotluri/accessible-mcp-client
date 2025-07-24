@@ -1,6 +1,7 @@
 import logging
 import os
 import uuid
+import json
 from datetime import datetime
 
 from flask import Flask, jsonify, render_template, request
@@ -19,21 +20,81 @@ logging.getLogger("mcp.client").setLevel(logging.INFO)
 
 logger.info("=== Flask application starting up ===")
 
+
+class ServerConfigManager:
+    """Manages persistent storage of server configurations"""
+
+    def __init__(self, config_file="server_configs.json"):
+        self.config_file = config_file
+
+    def load_configs(self):
+        """Load server configurations from file"""
+        if not os.path.exists(self.config_file):
+            logger.info(f"Config file {self.config_file} not found, starting with empty configuration")
+            return {}
+
+        try:
+            with open(self.config_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+
+            configs = {}
+            for server_id, config_data in data.items():
+                try:
+                    configs[server_id] = ServerConfig.from_dict(config_data)
+                except Exception as e:
+                    logger.warning(f"Failed to load server config {server_id}: {e}")
+                    continue
+
+            logger.info(f"Loaded {len(configs)} server configurations from {self.config_file}")
+            return configs
+
+        except Exception as e:
+            logger.error(f"Failed to load config file {self.config_file}: {e}")
+            return {}
+
+    def save_configs(self, configs):
+        """Save server configurations to file"""
+        try:
+            # Convert ServerConfig objects to dictionaries
+            data = {}
+            for server_id, config in configs.items():
+                # Don't save the status field (runtime state)
+                config_dict = config.to_dict()
+                config_dict.pop("status", None)  # Remove status from saved data
+                data[server_id] = config_dict
+
+            with open(self.config_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+
+            logger.info(f"Saved {len(configs)} server configurations to {self.config_file}")
+            return True
+
+        except Exception as e:
+            logger.error(f"Failed to save config file {self.config_file}: {e}")
+            return False
+
+
 app = Flask(__name__)
 app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "your-secret-key-change-in-production")
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+# Initialize configuration manager
+config_manager = ServerConfigManager()
+
 # Store active MCP clients
 active_clients = {}
+
+# Server configurations will be loaded after class definitions
 server_configs = {}
 
 
 class ServerConfig:
-    def __init__(self, name, transport_type, config, server_id=None):
+    def __init__(self, name, transport_type, config, server_id=None, auto_connect=False):
         self.id = server_id or str(uuid.uuid4())
         self.name = name
         self.transport_type = transport_type
         self.config = config
+        self.auto_connect = auto_connect
         self.created_at = datetime.now()
         self.status = "disconnected"
 
@@ -43,9 +104,95 @@ class ServerConfig:
             "name": self.name,
             "transport_type": self.transport_type,
             "config": self.config,
+            "auto_connect": self.auto_connect,
             "created_at": self.created_at.isoformat(),
             "status": self.status,
         }
+
+    @classmethod
+    def from_dict(cls, data):
+        """Create ServerConfig from dictionary data"""
+        created_at = data.get("created_at")
+        if isinstance(created_at, str):
+            # Parse ISO format datetime string
+            try:
+                created_at = datetime.fromisoformat(created_at.replace("Z", "+00:00"))
+            except ValueError:
+                created_at = datetime.now()
+
+        instance = cls(
+            name=data["name"],
+            transport_type=data["transport_type"],
+            config=data["config"],
+            server_id=data["id"],
+            auto_connect=data.get("auto_connect", False),
+        )
+
+        if created_at:
+            instance.created_at = created_at
+
+        return instance
+
+
+# Load server configurations from persistent storage now that ServerConfig is defined
+server_configs.update(config_manager.load_configs())
+
+
+def auto_connect_servers():
+    """Auto-connect to servers that have auto_connect enabled"""
+    for server_id, server_config in server_configs.items():
+        if server_config.auto_connect:
+            try:
+                logger.info(f"Auto-connecting to server: {server_config.name} ({server_id})")
+
+                # Create transport based on type
+                transport = None
+                if server_config.transport_type == "stdio":
+                    transport = StdioTransport(
+                        command=server_config.config.get("command", ""),
+                        args=server_config.config.get("args", []),
+                        cwd=server_config.config.get("cwd"),
+                    )
+                elif server_config.transport_type == "http":
+                    transport = HTTPTransport(
+                        url=server_config.config.get("url", ""),
+                        headers=server_config.config.get("headers", {}),
+                        timeout=server_config.config.get("timeout", 30),
+                    )
+                elif server_config.transport_type == "websocket":
+                    transport = WebSocketTransport(
+                        url=server_config.config.get("url", ""),
+                        protocols=server_config.config.get("protocols", []),
+                        headers=server_config.config.get("headers", {}),
+                    )
+                else:
+                    logger.error(f"Invalid transport type for server {server_id}: {server_config.transport_type}")
+                    continue
+
+                # Create and connect MCP client
+                client = MCPClient(transport)
+                client.connect()
+
+                # Initialize MCP session
+                client.initialize(
+                    {
+                        "protocolVersion": "2024-11-05",
+                        "capabilities": {"tools": {}, "resources": {}},
+                        "clientInfo": {"name": "Accessible MCP Client", "version": "1.0.0"},
+                    }
+                )
+
+                active_clients[server_id] = client
+                server_config.status = "connected"
+                logger.info(f"Successfully auto-connected to server: {server_config.name}")
+
+            except Exception as e:
+                logger.error(f"Failed to auto-connect to server {server_config.name}: {e}")
+                server_config.status = "error"
+
+
+# Auto-connect to servers on startup
+auto_connect_servers()
 
 
 @app.route("/")
@@ -88,9 +235,18 @@ def create_server():
                 return jsonify({"error": f"Missing required field: {field}"}), 400
 
         # Create server configuration
-        server_config = ServerConfig(name=data["name"], transport_type=data["transport_type"], config=data["config"])
+        server_config = ServerConfig(
+            name=data["name"],
+            transport_type=data["transport_type"],
+            config=data["config"],
+            auto_connect=data.get("auto_connect", False),
+        )
 
         server_configs[server_config.id] = server_config
+
+        # Save to persistent storage
+        if not config_manager.save_configs(server_configs):
+            logger.warning("Failed to save server configuration to file")
 
         return jsonify(server_config.to_dict()), 201
 
@@ -116,6 +272,12 @@ def update_server(server_id):
             server_config.transport_type = data["transport_type"]
         if "config" in data:
             server_config.config = data["config"]
+        if "auto_connect" in data:
+            server_config.auto_connect = data["auto_connect"]
+
+        # Save to persistent storage
+        if not config_manager.save_configs(server_configs):
+            logger.warning("Failed to save server configuration to file")
 
         return jsonify(server_config.to_dict())
 
@@ -137,6 +299,10 @@ def delete_server(server_id):
             del active_clients[server_id]
 
         del server_configs[server_id]
+
+        # Save to persistent storage
+        if not config_manager.save_configs(server_configs):
+            logger.warning("Failed to save server configuration to file")
 
         return jsonify({"message": "Server deleted successfully"})
 
