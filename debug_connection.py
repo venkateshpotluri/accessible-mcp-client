@@ -6,7 +6,7 @@ import json
 url = "http://localhost:8765/mcp"
 test_message = {
     "jsonrpc": "2.0",
-    "id": "test_connection", 
+    "id": "test_connection",
     "method": "initialize",
     "params": {
         "protocolVersion": "2024-11-05",
@@ -25,15 +25,15 @@ try:
         headers={'Content-Type': 'application/json'},
         timeout=30
     )
-    
+
     print(f"Status Code: {response.status_code}")
     print(f"Response Headers: {dict(response.headers)}")
     print(f"Response Text: {response.text}")
-    
+
     if response.status_code == 200:
         result = response.json()
         print(f"JSON Response: {json.dumps(result, indent=2)}")
-    
+
 except Exception as e:
     print(f"Error: {e}")
     import traceback

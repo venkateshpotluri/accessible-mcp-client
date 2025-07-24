@@ -23,17 +23,17 @@ if response.status_code == 200 or response.status_code == 201:
     server = response.json()
     server_id = server.get('id')
     print(f"Server created with ID: {server_id}")
-    
+
     # Step 2: Test the connection
     print("\nStep 2: Testing connection...")
     test_response = requests.post(f"{flask_url}/api/servers/{server_id}/test")
     print(f"Test response: {test_response.status_code}")
     print(f"Test result: {test_response.text}")
-    
+
     # Step 3: Clean up
     print("\nStep 3: Cleaning up...")
     delete_response = requests.delete(f"{flask_url}/api/servers/{server_id}")
     print(f"Delete response: {delete_response.status_code}")
-    
+
 else:
     print(f"Failed to create server: {response.text}")
