@@ -214,10 +214,18 @@ flask_session/
 # MCP server logs
 mcp_logs/
 
-# Temporary test files
-test_*.py
-debug_*.py
+# Temporary test files (exclude from root only, allow tests/ directory)
+/test_*.py
+/debug_*.py
 
 # Configuration files with sensitive data
 config.json
 secrets.json
+
+# Testing and CI/CD artifacts
+.pytest_cache/
+htmlcov/
+.coverage
+coverage.xml
+.tox/
+.mypy_cache/
