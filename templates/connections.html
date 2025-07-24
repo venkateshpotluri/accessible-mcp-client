@@ -203,6 +203,21 @@
                     </div>
                 </div>
                 
+                <!-- Auto-Connect Option -->
+                <div class="form-group">
+                    <div class="form-checkbox">
+                        <input type="checkbox" id="auto-connect" name="auto_connect" class="form-checkbox-input">
+                        <label for="auto-connect" class="form-checkbox-label">
+                            <span class="checkbox-icon" aria-hidden="true">🔄</span>
+                            Auto-connect on startup
+                        </label>
+                    </div>
+                    <div id="auto-connect-help" class="form-help">
+                        Automatically connect to this server when the application starts.
+                    </div>
+                    <div class="form-error" role="alert" aria-live="polite"></div>
+                </div>
+                
                 <!-- Form Actions -->
                 <div class="form-actions">
                     <button type="button" id="test-connection" class="btn btn--secondary">
@@ -525,7 +540,8 @@ class ConnectionsManager {
         const serverConfig = {
             name: formData.get('name'),
             transport_type: transportType,
-            config: this.buildTransportConfig(transportType, formData)
+            config: this.buildTransportConfig(transportType, formData),
+            auto_connect: formData.get('auto_connect') === 'on'
         };
         
         try {
@@ -863,6 +879,10 @@ class ConnectionsManager {
                         <span class="detail-value">${server.transport_type}</span>
                     </div>
                     <div class="server-detail">
+                        <span class="detail-label">Auto-connect:</span>
+                        <span class="detail-value">${server.auto_connect ? 'Enabled' : 'Disabled'}</span>
+                    </div>
+                    <div class="server-detail">
                         <span class="detail-label">Created:</span>
                         <span class="detail-value">${new Date(server.created_at).toLocaleDateString()}</span>
                     </div>
@@ -975,13 +995,27 @@ class ConnectionsManager {
             </div>
             
             <div class="form-group">
+                <div class="form-checkbox">
+                    <input type="checkbox" id="edit-auto-connect" name="auto_connect" 
+                           class="form-checkbox-input" ${server.auto_connect ? 'checked' : ''}>
+                    <label for="edit-auto-connect" class="form-checkbox-label">
+                        <span class="checkbox-icon" aria-hidden="true">🔄</span>
+                        Auto-connect on startup
+                    </label>
+                </div>
+                <div class="form-help">
+                    Automatically connect to this server when the application starts.
+                </div>
+            </div>
+            
+            <div class="form-group">
                 <label class="form-label">Current Configuration:</label>
                 <pre class="config-display"><code>${JSON.stringify(server.config, null, 2)}</code></pre>
             </div>
             
             <p class="form-help">
                 Note: Full configuration editing will be available in a future version. 
-                For now, you can only change the server name.
+                For now, you can change the server name and auto-connect setting.
             </p>
         `;
     }
@@ -999,7 +1033,8 @@ class ConnectionsManager {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    name: formData.get('name')
+                    name: formData.get('name'),
+                    auto_connect: formData.get('auto_connect') === 'on'
                 })
             });
             

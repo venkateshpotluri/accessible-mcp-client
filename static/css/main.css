@@ -742,6 +742,7 @@ pre code {
 }
 
 .form-radio,
+.form-checkbox,
 .form-checkbox-group {
   display: flex;
   align-items: flex-start;
@@ -749,7 +750,7 @@ pre code {
 }
 
 .form-radio-input,
-.form-checkbox {
+.form-checkbox-input {
   margin: 0;
   min-width: 20px;
   min-height: 20px;
@@ -757,7 +758,7 @@ pre code {
 }
 
 .form-radio-input:focus,
-.form-checkbox:focus {
+.form-checkbox-input:focus {
   outline: var(--border-width-thick) solid var(--color-focus);
   outline-offset: 2px;
 }
@@ -771,7 +772,8 @@ pre code {
   line-height: var(--line-height-normal);
 }
 
-.radio-icon {
+.radio-icon,
+.checkbox-icon {
   margin-right: var(--spacing-xs);
 }
 
