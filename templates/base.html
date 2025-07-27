@@ -64,6 +64,13 @@
                     </a>
                 </li>
                 <li class="nav__item" role="none">
+                    <a href="{{ url_for('chat') }}" class="nav__link" role="menuitem"
+                       {% if request.endpoint == 'chat' %}aria-current="page"{% endif %}>
+                        <span class="nav__icon" aria-hidden="true">💬</span>
+                        Chat
+                    </a>
+                </li>
+                <li class="nav__item" role="none">
                     <a href="{{ url_for('connections') }}" class="nav__link" role="menuitem"
                        {% if request.endpoint == 'connections' %}aria-current="page"{% endif %}>
                         <span class="nav__icon" aria-hidden="true">🔌</span>

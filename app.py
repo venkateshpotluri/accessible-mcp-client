@@ -7,6 +7,7 @@ from datetime import datetime
 from flask import Flask, jsonify, render_template, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
+from chat.service import ChatService
 from mcp.client import MCPClient
 from mcp.transport import HTTPTransport, StdioTransport, WebSocketTransport
 
@@ -81,6 +82,9 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # Initialize configuration manager
 config_manager = ServerConfigManager()
 
+# Initialize chat service
+chat_service = ChatService()
+
 # Store active MCP clients
 active_clients = {}
 
@@ -136,6 +140,9 @@ class ServerConfig:
 
 # Load server configurations from persistent storage now that ServerConfig is defined
 server_configs.update(config_manager.load_configs())
+
+# Set up chat service with MCP clients reference
+chat_service.set_mcp_clients(active_clients)
 
 
 def auto_connect_servers():
@@ -199,6 +206,12 @@ auto_connect_servers()
 def index():
     """Main application interface"""
     return render_template("index.html")
+
+
+@app.route("/chat")
+def chat():
+    """Chat interface page"""
+    return render_template("chat.html")
 
 
 @app.route("/connections")
@@ -436,6 +449,89 @@ def test_connection(server_id):
     except Exception as e:
         logger.error(f"Error testing connection: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# Chat API Routes
+
+
+@app.route("/api/chat/sessions", methods=["GET"])
+def list_chat_sessions():
+    """List all chat sessions"""
+    try:
+        sessions = chat_service.list_sessions()
+        return jsonify(sessions)
+    except Exception as e:
+        logger.error(f"Error listing chat sessions: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/chat/sessions", methods=["POST"])
+def create_chat_session():
+    """Create a new chat session"""
+    try:
+        data = request.get_json() or {}
+        title = data.get("title")
+        
+        session = chat_service.create_session(title=title)
+        return jsonify(session.to_dict()), 201
+    except Exception as e:
+        logger.error(f"Error creating chat session: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/chat/sessions/<session_id>", methods=["GET"])
+def get_chat_session(session_id):
+    """Get a chat session"""
+    try:
+        session = chat_service.get_session(session_id)
+        if not session:
+            return jsonify({"error": "Session not found"}), 404
+        
+        return jsonify(session.to_dict())
+    except Exception as e:
+        logger.error(f"Error getting chat session: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/chat/sessions/<session_id>", methods=["DELETE"])
+def delete_chat_session(session_id):
+    """Delete a chat session"""
+    try:
+        success = chat_service.delete_session(session_id)
+        if not success:
+            return jsonify({"error": "Session not found"}), 404
+        
+        return jsonify({"message": "Session deleted successfully"})
+    except Exception as e:
+        logger.error(f"Error deleting chat session: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/chat/sessions/<session_id>/messages", methods=["POST"])
+def send_chat_message(session_id):
+    """Send a message to a chat session"""
+    try:
+        data = request.get_json()
+        if not data or "message" not in data:
+            return jsonify({"error": "Message is required"}), 400
+        
+        user_message = data["message"]
+        server_ids = data.get("server_ids", [])
+        
+        # Validate server IDs exist and are connected
+        if server_ids:
+            for server_id in server_ids:
+                if server_id not in active_clients:
+                    return jsonify({"error": f"Server {server_id} not connected"}), 400
+        
+        response_message = chat_service.send_message(session_id, user_message, server_ids)
+        return jsonify(response_message.to_dict())
+        
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        logger.error(f"Error sending chat message: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 # MCP Protocol API Routes
