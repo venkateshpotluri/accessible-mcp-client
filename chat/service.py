@@ -14,9 +14,9 @@ import anthropic
 logger = logging.getLogger(__name__)
 
 # Configuration constants
-DEFAULT_MODEL = "claude-3-5-sonnet-20241022"
-DEFAULT_MAX_TOKENS = 4000
-MAX_MESSAGE_LENGTH = 10000
+DEFAULT_MODEL = os.getenv("CLAUDE_MODEL", "claude-3-5-sonnet-20241022")
+DEFAULT_MAX_TOKENS = int(os.getenv("CLAUDE_MAX_TOKENS", "4000"))
+MAX_MESSAGE_LENGTH = int(os.getenv("MAX_MESSAGE_LENGTH", "10000"))
 
 
 class ChatMessage:
@@ -387,7 +387,8 @@ class ChatService:
                     tool_results.append(tool_result)
 
                     # Add tool result to content
-                    content_parts.append(f"\n[Tool: {content.name}]\nResult: {json.dumps(result, indent=2)}")
+                    formatted_result = self._format_tool_result(content.name, result)
+                    content_parts.append(f"\n[Tool: {content.name}]\n{formatted_result}")
 
                 except Exception as e:
                     error_result = {"tool_call_id": content.id, "error": str(e), "success": False}
@@ -420,6 +421,60 @@ class ChatService:
         # Call the MCP tool
         result = client.call_tool(actual_tool_name, clean_input)
         return result
+
+    def _format_tool_result(self, tool_name: str, result: Any) -> str:
+        """Format tool result in a user-friendly way"""
+        if result is None:
+            return "Result: No data returned"
+
+        # Handle different types of results
+        if isinstance(result, str):
+            # If it's already a string, check if it looks like structured data
+            if result.strip().startswith("{") or result.strip().startswith("["):
+                try:
+                    parsed = json.loads(result)
+                    return self._format_structured_data(parsed)
+                except json.JSONDecodeError:
+                    return f"Result: {result}"
+            else:
+                return f"Result: {result}"
+
+        elif isinstance(result, (dict, list)):
+            return self._format_structured_data(result)
+
+        else:
+            return f"Result: {str(result)}"
+
+    def _format_structured_data(self, data: Any) -> str:
+        """Format structured data (dict/list) in a readable way"""
+        if isinstance(data, dict):
+            if len(data) == 0:
+                return "Result: Empty data"
+
+            # For small dictionaries, format as key-value pairs
+            if len(data) <= 5 and all(isinstance(v, (str, int, float, bool, type(None))) for v in data.values()):
+                formatted_items = []
+                for key, value in data.items():
+                    formatted_items.append(f"  • {key}: {value}")
+                return "Result:\n" + "\n".join(formatted_items)
+
+            # For larger or complex dictionaries, use JSON with indentation
+            return f"Result: {json.dumps(data, indent=2)}"
+
+        elif isinstance(data, list):
+            if len(data) == 0:
+                return "Result: Empty list"
+
+            # For simple lists of strings/numbers, format as bullet points
+            if len(data) <= 10 and all(isinstance(item, (str, int, float)) for item in data):
+                formatted_items = [f"  • {item}" for item in data]
+                return "Result:\n" + "\n".join(formatted_items)
+
+            # For complex lists, use JSON
+            return f"Result: {json.dumps(data, indent=2)}"
+
+        else:
+            return f"Result: {json.dumps(data, indent=2)}"
 
     def get_session_summary(self, session_id: str) -> Optional[Dict[str, Any]]:
         """Get a summary of a chat session"""

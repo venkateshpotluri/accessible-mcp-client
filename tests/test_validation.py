@@ -210,3 +210,69 @@ class TestErrorHandling:
 
             assert result.role == "assistant"
             assert "unexpected error" in result.content.lower()
+
+
+class TestToolResultFormatting:
+    """Test tool result formatting functionality"""
+
+    def test_format_tool_result_string(self):
+        """Test formatting simple string results"""
+        service = ChatService()
+        result = service._format_tool_result("test_tool", "Hello world")
+        assert result == "Result: Hello world"
+
+    def test_format_tool_result_json_string(self):
+        """Test formatting JSON string results"""
+        service = ChatService()
+        json_string = '{"message": "Hello", "status": "success"}'
+        result = service._format_tool_result("test_tool", json_string)
+        assert "• message: Hello" in result
+        assert "• status: success" in result
+
+    def test_format_tool_result_simple_dict(self):
+        """Test formatting simple dictionary results"""
+        service = ChatService()
+        data = {"name": "John", "age": 30, "active": True}
+        result = service._format_tool_result("test_tool", data)
+        assert "• name: John" in result
+        assert "• age: 30" in result
+        assert "• active: True" in result
+
+    def test_format_tool_result_complex_dict(self):
+        """Test formatting complex dictionary results"""
+        service = ChatService()
+        data = {"users": [{"name": "John"}, {"name": "Jane"}], "total": 2}
+        result = service._format_tool_result("test_tool", data)
+        # Should fall back to JSON formatting for complex data
+        assert '"users"' in result
+        assert '"total": 2' in result
+
+    def test_format_tool_result_simple_list(self):
+        """Test formatting simple list results"""
+        service = ChatService()
+        data = ["apple", "banana", "cherry"]
+        result = service._format_tool_result("test_tool", data)
+        assert "• apple" in result
+        assert "• banana" in result
+        assert "• cherry" in result
+
+    def test_format_tool_result_complex_list(self):
+        """Test formatting complex list results"""
+        service = ChatService()
+        data = [{"name": "John"}, {"name": "Jane"}]
+        result = service._format_tool_result("test_tool", data)
+        # Should fall back to JSON formatting
+        assert '"name": "John"' in result
+        assert '"name": "Jane"' in result
+
+    def test_format_tool_result_empty_data(self):
+        """Test formatting empty data"""
+        service = ChatService()
+        assert "Empty data" in service._format_tool_result("test_tool", {})
+        assert "Empty list" in service._format_tool_result("test_tool", [])
+
+    def test_format_tool_result_none(self):
+        """Test formatting None result"""
+        service = ChatService()
+        result = service._format_tool_result("test_tool", None)
+        assert result == "Result: No data returned"

@@ -23,8 +23,8 @@ logging.getLogger("mcp.client").setLevel(logging.INFO)
 logger.info("=== Flask application starting up ===")
 
 # Constants for validation
-MAX_MESSAGE_LENGTH = 10000
-MAX_SESSION_TITLE_LENGTH = 200
+MAX_MESSAGE_LENGTH = int(os.getenv("MAX_MESSAGE_LENGTH", "10000"))
+MAX_SESSION_TITLE_LENGTH = int(os.getenv("MAX_SESSION_TITLE_LENGTH", "200"))
 
 
 def validate_chat_message(message: str) -> tuple[bool, str]:
