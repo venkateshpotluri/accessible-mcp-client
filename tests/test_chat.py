@@ -165,18 +165,20 @@ class TestChatService:
     def test_chat_service_creation_with_api_key(self):
         """Test creating chat service with API key from environment"""
         with patch("anthropic.Anthropic") as mock_anthropic:
-            service = ChatService()
+            with patch.object(ChatService, "_test_api_key"):
+                service = ChatService()
 
-            assert service.api_key == "test-key"
-            mock_anthropic.assert_called_once_with(api_key="test-key")
+                assert service.api_key == "test-key"
+                mock_anthropic.assert_called_once_with(api_key="test-key")
 
     def test_chat_service_creation_with_direct_api_key(self):
         """Test creating chat service with direct API key"""
         with patch("anthropic.Anthropic") as mock_anthropic:
-            service = ChatService(anthropic_api_key="direct-key")
+            with patch.object(ChatService, "_test_api_key"):
+                service = ChatService(anthropic_api_key="direct-key")
 
-            assert service.api_key == "direct-key"
-            mock_anthropic.assert_called_once_with(api_key="direct-key")
+                assert service.api_key == "direct-key"
+                mock_anthropic.assert_called_once_with(api_key="direct-key")
 
     def test_set_mcp_clients(self):
         """Test setting MCP clients reference"""
@@ -308,10 +310,12 @@ class TestChatService:
 
     def test_send_message_session_not_found(self):
         """Test sending message to non-existent session"""
-        service = ChatService(anthropic_api_key="test-key")
+        with patch("anthropic.Anthropic") as mock_anthropic:
+            with patch.object(ChatService, "_test_api_key"):
+                service = ChatService(anthropic_api_key="test-key")
 
-        with pytest.raises(ValueError, match="Session .* not found"):
-            service.send_message("nonexistent", "Hello")
+                with pytest.raises(ValueError, match="Session .* not found"):
+                    service.send_message("nonexistent", "Hello")
 
     def test_get_session_summary(self):
         """Test getting session summary"""

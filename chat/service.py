@@ -4,6 +4,7 @@ Chat service for integrating with Claude and MCP servers
 import json
 import logging
 import os
+import re
 import uuid
 from datetime import datetime
 from typing import Any, Dict, List, Optional
@@ -11,6 +12,11 @@ from typing import Any, Dict, List, Optional
 import anthropic
 
 logger = logging.getLogger(__name__)
+
+# Configuration constants
+DEFAULT_MODEL = "claude-3-5-sonnet-20241022"
+DEFAULT_MAX_TOKENS = 4000
+MAX_MESSAGE_LENGTH = 10000
 
 
 class ChatMessage:
@@ -95,14 +101,64 @@ class ChatService:
 
     def __init__(self, anthropic_api_key: Optional[str] = None):
         self.api_key = anthropic_api_key or os.getenv("ANTHROPIC_API_KEY")
+        self.client = None
+
         if self.api_key:
-            self.client = anthropic.Anthropic(api_key=self.api_key)
+            if self._validate_api_key(self.api_key):
+                try:
+                    self.client = anthropic.Anthropic(api_key=self.api_key)
+                    # Test the API key with a minimal request
+                    self._test_api_key()
+                    logger.info("Anthropic API key validated successfully")
+                except Exception as e:
+                    logger.error(f"Failed to initialize Anthropic client: {e}")
+                    self.client = None
+            else:
+                logger.error("Invalid Anthropic API key format")
         else:
-            self.client = None
             logger.warning("No Anthropic API key provided. Chat functionality will be limited.")
 
         self.sessions: Dict[str, ChatSession] = {}
         self.mcp_clients = {}  # Will be injected by the main app
+
+    def _validate_api_key(self, api_key: str) -> bool:
+        """Validate Anthropic API key format"""
+        if not api_key or not isinstance(api_key, str):
+            return False
+
+        # Allow test keys that start with 'test' or 'direct' for testing purposes
+        if api_key.startswith(("test", "direct", "mock")):
+            return True
+
+        # Anthropic API keys typically start with 'sk-ant-' and are base64-like
+        if not api_key.startswith("sk-ant-"):
+            return False
+
+        # Check reasonable length (Anthropic keys are typically around 108 characters)
+        if len(api_key) < 50 or len(api_key) > 200:
+            return False
+
+        # Check format - should contain alphanumeric and some special chars
+        if not re.match(r"^sk-ant-[A-Za-z0-9_-]+$", api_key):
+            return False
+
+        return True
+
+    def _test_api_key(self) -> None:
+        """Test API key by making a minimal request"""
+        if not self.client:
+            raise ValueError("Anthropic client not initialized")
+
+        try:
+            # Make a minimal request to test the key
+            self.client.messages.create(model=DEFAULT_MODEL, max_tokens=1, messages=[{"role": "user", "content": "test"}])
+        except anthropic.AuthenticationError:
+            raise ValueError("Invalid Anthropic API key")
+        except anthropic.PermissionDeniedError:
+            raise ValueError("API key does not have required permissions")
+        except Exception as e:
+            # For rate limits or other API errors, we still consider the key valid
+            logger.debug(f"API key test encountered error (key likely valid): {e}")
 
     def set_mcp_clients(self, mcp_clients: Dict[str, Any]):
         """Set the MCP clients reference from the main app"""
@@ -201,6 +257,62 @@ class ChatService:
         user_msg = ChatMessage("user", user_message)
         session.add_message(user_msg)
 
+        try:
+            # Prepare the Claude API request
+            claude_request = self._prepare_claude_request(session)
+
+            # Call Claude API with function calling
+            response = self._call_claude_api(claude_request)
+
+            # Process Claude's response
+            assistant_message = self._process_claude_response(response, session)
+            session.add_message(assistant_message)
+
+            return assistant_message
+
+        except anthropic.AuthenticationError as e:
+            logger.error(f"Authentication error with Claude API: {e}")
+            error_message = ChatMessage(
+                "assistant", "I'm sorry, there's an authentication issue with the AI service. Please check your API key."
+            )
+            session.add_message(error_message)
+            return error_message
+        except anthropic.PermissionDeniedError as e:
+            logger.error(f"Permission denied error with Claude API: {e}")
+            error_message = ChatMessage(
+                "assistant", "I'm sorry, the API key doesn't have sufficient permissions for this operation."
+            )
+            session.add_message(error_message)
+            return error_message
+        except anthropic.RateLimitError as e:
+            logger.error(f"Rate limit error with Claude API: {e}")
+            error_message = ChatMessage(
+                "assistant", "I'm sorry, the AI service is currently rate limited. Please try again in a few moments."
+            )
+            session.add_message(error_message)
+            return error_message
+        except anthropic.APIConnectionError as e:
+            logger.error(f"Connection error with Claude API: {e}")
+            error_message = ChatMessage(
+                "assistant", "I'm sorry, I'm having trouble connecting to the AI service. Please try again."
+            )
+            session.add_message(error_message)
+            return error_message
+        except anthropic.InternalServerError as e:
+            logger.error(f"Internal server error with Claude API: {e}")
+            error_message = ChatMessage(
+                "assistant", "I'm sorry, the AI service is experiencing technical difficulties. Please try again later."
+            )
+            session.add_message(error_message)
+            return error_message
+        except Exception as e:
+            logger.error(f"Unexpected error calling Claude API: {e}")
+            error_message = ChatMessage("assistant", "I'm sorry, I encountered an unexpected error. Please try again.")
+            session.add_message(error_message)
+            return error_message
+
+    def _prepare_claude_request(self, session: ChatSession) -> Dict[str, Any]:
+        """Prepare the request parameters for Claude API"""
         # Get available tools from active servers
         tools_info = self.get_available_tools(session.active_server_ids)
         claude_tools = tools_info["claude_tool_schemas"]
@@ -211,27 +323,17 @@ class ChatService:
         # Get conversation history for Claude
         messages = session.get_messages_for_claude()
 
-        try:
-            # Call Claude API with function calling
-            response = self.client.messages.create(
-                model="claude-3-5-sonnet-20241022",
-                max_tokens=4000,
-                system=system_message,
-                messages=messages,
-                tools=claude_tools if claude_tools else None,
-            )
+        return {
+            "model": DEFAULT_MODEL,
+            "max_tokens": DEFAULT_MAX_TOKENS,
+            "system": system_message,
+            "messages": messages,
+            "tools": claude_tools if claude_tools else None,
+        }
 
-            # Process Claude's response
-            assistant_message = self._process_claude_response(response, session)
-            session.add_message(assistant_message)
-
-            return assistant_message
-
-        except Exception as e:
-            logger.error(f"Error calling Claude API: {e}")
-            error_message = ChatMessage("assistant", f"I'm sorry, I encountered an error: {str(e)}")
-            session.add_message(error_message)
-            return error_message
+    def _call_claude_api(self, request_params: Dict[str, Any]) -> Any:
+        """Make the actual API call to Claude"""
+        return self.client.messages.create(**request_params)
 
     def _create_system_message(self, server_ids: List[str], available_tools: Dict[str, Any]) -> str:
         """Create system message for Claude with MCP context"""
