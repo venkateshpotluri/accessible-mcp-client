@@ -1,8 +1,9 @@
 import json
 import os
 import tempfile
-import pytest
 from unittest.mock import patch
+
+import pytest
 
 from app import ServerConfig, ServerConfigManager
 

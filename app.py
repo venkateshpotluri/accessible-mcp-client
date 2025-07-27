@@ -1,7 +1,7 @@
+import json
 import logging
 import os
 import uuid
-import json
 from datetime import datetime
 
 from flask import Flask, jsonify, render_template, request
@@ -471,7 +471,7 @@ def create_chat_session():
     try:
         data = request.get_json() or {}
         title = data.get("title")
-        
+
         session = chat_service.create_session(title=title)
         return jsonify(session.to_dict()), 201
     except Exception as e:
@@ -486,7 +486,7 @@ def get_chat_session(session_id):
         session = chat_service.get_session(session_id)
         if not session:
             return jsonify({"error": "Session not found"}), 404
-        
+
         return jsonify(session.to_dict())
     except Exception as e:
         logger.error(f"Error getting chat session: {e}")
@@ -500,7 +500,7 @@ def delete_chat_session(session_id):
         success = chat_service.delete_session(session_id)
         if not success:
             return jsonify({"error": "Session not found"}), 404
-        
+
         return jsonify({"message": "Session deleted successfully"})
     except Exception as e:
         logger.error(f"Error deleting chat session: {e}")
@@ -514,19 +514,19 @@ def send_chat_message(session_id):
         data = request.get_json()
         if not data or "message" not in data:
             return jsonify({"error": "Message is required"}), 400
-        
+
         user_message = data["message"]
         server_ids = data.get("server_ids", [])
-        
+
         # Validate server IDs exist and are connected
         if server_ids:
             for server_id in server_ids:
                 if server_id not in active_clients:
                     return jsonify({"error": f"Server {server_id} not connected"}), 400
-        
+
         response_message = chat_service.send_message(session_id, user_message, server_ids)
         return jsonify(response_message.to_dict())
-        
+
     except ValueError as e:
         return jsonify({"error": str(e)}), 400
     except Exception as e:
