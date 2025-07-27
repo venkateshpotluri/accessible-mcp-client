@@ -222,6 +222,9 @@ mcp_logs/
 config.json
 secrets.json
 
+# MCP Client server configurations (user-specific)
+server_configs.json
+
 # Testing and CI/CD artifacts
 .pytest_cache/
 htmlcov/
