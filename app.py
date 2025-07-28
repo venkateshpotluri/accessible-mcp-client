@@ -14,6 +14,7 @@ from mcp.client import MCPClient
 from mcp.transport import HTTPTransport, StdioTransport, WebSocketTransport
 
 # Load environment variables from .env file if it exists
+# This must be called early, before other modules that depend on env vars
 load_dotenv()
 
 # Configure logging
