@@ -61,9 +61,20 @@ A comprehensive, web-accessible Model Context Protocol (MCP) client built with F
    pip install -r requirements.txt
    ```
 
-4. **Configure API key (for chat functionality)**:
+4. **Configure environment variables**:
+   
+   **Option A: Using .env file (Recommended for local development)**
+   ```bash
+   # Copy the example file and edit it
+   cp .env.example .env
+   # Edit .env file with your actual values
+   nano .env
+   ```
+   
+   **Option B: Using environment variables**
    ```bash
    export ANTHROPIC_API_KEY="your_anthropic_api_key_here"
+   export SECRET_KEY="your-secret-key-here"
    ```
 
 5. **Run the application**:
@@ -164,7 +175,39 @@ Example chat interactions:
 
 ## Configuration
 
+## Configuration
+
 ### Environment Variables
+
+You can configure the application using environment variables or a `.env` file. For local development, using a `.env` file is recommended as it keeps your configuration organized and secure.
+
+#### Setting up a .env file (Recommended)
+
+1. **Copy the example file**:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Edit the .env file** with your actual values:
+   ```bash
+   nano .env  # or use your preferred editor
+   ```
+
+3. **Required variables**:
+   - `ANTHROPIC_API_KEY`: Your Anthropic API key for chat functionality
+   - `SECRET_KEY`: Flask secret key for session management
+
+#### Using Environment Variables Directly
+
+If you prefer not to use a `.env` file, you can set environment variables directly:
+
+```bash
+export ANTHROPIC_API_KEY="your_anthropic_api_key_here"
+export SECRET_KEY="your-secret-key-here"
+export FLASK_ENV="development"
+```
+
+#### Available Configuration Options
 - `FLASK_ENV`: Set to 'development' for development mode
 - `SECRET_KEY`: Flask secret key for session management
 - `ANTHROPIC_API_KEY`: Anthropic API key for chat functionality

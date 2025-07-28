@@ -14,30 +14,59 @@ The chat functionality bridges the gap between human language and MCP protocol c
 
 ### 1. API Key Configuration
 
-To use the chat functionality, you need an Anthropic API key:
+To use the chat functionality, you need an Anthropic API key from the [Anthropic Console](https://console.anthropic.com/).
+
+**For Local Development (Recommended):**
+
+1. **Copy the environment file**:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. **Edit the .env file** and add your API key:
+   ```bash
+   # Edit the ANTHROPIC_API_KEY line in .env
+   ANTHROPIC_API_KEY=your_anthropic_api_key_here
+   ```
+
+**Alternative Methods:**
 
 ```bash
-# Set environment variable
+# Set environment variable directly
 export ANTHROPIC_API_KEY="your_anthropic_api_key_here"
 
-# Or add to your .env file
-echo "ANTHROPIC_API_KEY=your_anthropic_api_key_here" >> .env
+# Or add to your shell profile (persistent)
+echo 'export ANTHROPIC_API_KEY="your_anthropic_api_key_here"' >> ~/.bashrc
+source ~/.bashrc
 ```
 
-Get your API key from the [Anthropic Console](https://console.anthropic.com/).
+> **Security Note**: Never commit your `.env` file to version control. The `.env` file is already included in `.gitignore` to prevent accidental commits.
 
 ### 2. Optional Configuration
 
-You can customize the chat behavior with these environment variables:
+You can customize the chat behavior by adding these variables to your `.env` file or setting them as environment variables:
 
+**In your .env file:**
 ```bash
 # Claude model configuration
-export CLAUDE_MODEL="claude-3-5-sonnet-20241022"  # Default model
-export CLAUDE_MAX_TOKENS="4000"                   # Max response tokens
+CLAUDE_MODEL=claude-3-5-sonnet-20241022  # Default model
+CLAUDE_MAX_TOKENS=4000                   # Max response tokens
 
 # Message limits
-export MAX_MESSAGE_LENGTH="10000"                 # Max characters per message
-export MAX_SESSION_TITLE_LENGTH="200"             # Max title length
+MAX_MESSAGE_LENGTH=10000                 # Max characters per message
+MAX_SESSION_TITLE_LENGTH=200             # Max title length
+
+# Flask configuration
+SECRET_KEY=your-secure-secret-key-here
+FLASK_ENV=development
+```
+
+**As environment variables:**
+```bash
+export CLAUDE_MODEL="claude-3-5-sonnet-20241022"
+export CLAUDE_MAX_TOKENS="4000"
+export MAX_MESSAGE_LENGTH="10000"
+export MAX_SESSION_TITLE_LENGTH="200"
 ```
 
 ### 3. Connect MCP Servers

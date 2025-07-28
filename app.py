@@ -5,12 +5,16 @@ import re
 import uuid
 from datetime import datetime
 
+from dotenv import load_dotenv
 from flask import Flask, jsonify, render_template, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
 from chat.service import ChatService
 from mcp.client import MCPClient
 from mcp.transport import HTTPTransport, StdioTransport, WebSocketTransport
+
+# Load environment variables from .env file if it exists
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
