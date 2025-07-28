@@ -5,6 +5,7 @@ A comprehensive, web-accessible Model Context Protocol (MCP) client built with F
 ## Features
 
 - **Full MCP Support**: Complete implementation of the Model Context Protocol specification
+- **Chat Interface**: Natural language interaction with MCP servers through Claude AI
 - **Accessible Interface**: WCAG 2.1 AA compliant HTML frontend with semantic markup
 - **Multi-Server Support**: Connect to multiple MCP servers simultaneously
 - **Protocol Flexibility**: Supports different MCP transport protocols (stdio, HTTP, WebSocket)
@@ -34,6 +35,7 @@ A comprehensive, web-accessible Model Context Protocol (MCP) client built with F
 - Python 3.8 or higher
 - pip (Python package installer)
 - Modern web browser
+- Anthropic API key (for chat functionality)
 
 ### Local Development Setup
 
@@ -59,12 +61,17 @@ A comprehensive, web-accessible Model Context Protocol (MCP) client built with F
    pip install -r requirements.txt
    ```
 
-4. **Run the application**:
+4. **Configure API key (for chat functionality)**:
+   ```bash
+   export ANTHROPIC_API_KEY="your_anthropic_api_key_here"
+   ```
+
+5. **Run the application**:
    ```bash
    python app.py
    ```
 
-5. **Access the application**:
+6. **Access the application**:
    Open your browser to `http://localhost:5000`
 
 ## MCP Server Configuration
@@ -100,11 +107,25 @@ The client supports connecting to MCP servers via different transport methods:
 
 ### Interacting with Connected Servers
 
+#### Using the Dashboard
 1. **Select Active Server**: Choose from your connected servers
 2. **Browse Available Tools**: View tools provided by the server
 3. **Execute Tool Calls**: Use the interactive forms to call server tools
 4. **View Responses**: See formatted responses with syntax highlighting
 5. **Manage Resources**: Access and manage server resources
+
+#### Using the Chat Interface
+1. **Navigate to Chat**: Click the Chat tab in the navigation
+2. **Create Session**: Start a new chat session with an optional title
+3. **Select Servers**: Choose which MCP servers Claude can access
+4. **Start Chatting**: Use natural language to interact with your MCP tools
+5. **Review Results**: Claude will automatically call appropriate tools and format results
+
+Example chat interactions:
+- "Can you list the files in my project directory?"
+- "What's the current weather in San Francisco?"
+- "Help me analyze this data file"
+- "Create a new document with the following content..."
 
 ### Accessibility Features
 
@@ -131,6 +152,13 @@ The client supports connecting to MCP servers via different transport methods:
 - `POST /api/mcp/list_resources` - Get available resources from server
 - `GET /api/mcp/read_resource` - Read a specific resource
 
+### Chat Interface
+- `GET /api/chat/sessions` - List all chat sessions
+- `POST /api/chat/sessions` - Create a new chat session
+- `GET /api/chat/sessions/<id>` - Get chat session details
+- `DELETE /api/chat/sessions/<id>` - Delete a chat session
+- `POST /api/chat/sessions/<id>/messages` - Send a message to a session
+
 ### WebSocket Endpoints
 - `/ws/mcp/<server_id>` - WebSocket connection for real-time MCP communication
 
@@ -139,8 +167,13 @@ The client supports connecting to MCP servers via different transport methods:
 ### Environment Variables
 - `FLASK_ENV`: Set to 'development' for development mode
 - `SECRET_KEY`: Flask secret key for session management
+- `ANTHROPIC_API_KEY`: Anthropic API key for chat functionality
 - `MCP_TIMEOUT`: Default timeout for MCP operations (default: 30 seconds)
 - `MAX_SERVERS`: Maximum number of concurrent server connections (default: 10)
+- `CLAUDE_MODEL`: Claude model to use for chat (default: claude-3-5-sonnet-20241022)
+- `CLAUDE_MAX_TOKENS`: Maximum tokens for Claude responses (default: 4000)
+- `MAX_MESSAGE_LENGTH`: Maximum length for chat messages (default: 10000)
+- `MAX_SESSION_TITLE_LENGTH`: Maximum length for chat session titles (default: 200)
 
 ### Configuration File
 Create a `config.json` file in the root directory:
@@ -278,6 +311,9 @@ For full-stack deployment with Flask backend:
 ```
 AccessibleMCPClient/
 ├── app.py                 # Main Flask application
+├── chat/                  # Chat service implementation
+│   ├── __init__.py
+│   └── service.py        # Claude AI integration and chat management
 ├── mcp/                   # MCP protocol implementation
 │   ├── __init__.py
 │   ├── client.py         # MCP client implementation
@@ -295,10 +331,14 @@ AccessibleMCPClient/
 ├── templates/           # Jinja2 templates
 │   ├── base.html       # Base template
 │   ├── index.html      # Main interface
+│   ├── chat.html       # Chat interface
 │   ├── connections.html # Server connections
 │   └── help.html       # Help documentation
+├── docs/               # Additional documentation
+│   └── chat.md         # Chat functionality guide
 ├── tests/              # Test suite
 ├── requirements.txt    # Python dependencies
+├── requirements-dev.txt # Development dependencies
 ├── Dockerfile         # Docker configuration
 ├── Procfile          # Heroku configuration
 └── README.md         # This file

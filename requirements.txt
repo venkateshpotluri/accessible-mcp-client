@@ -8,3 +8,4 @@ jsonschema==4.19.2
 gunicorn==21.2.0
 python-dotenv==1.0.0
 Werkzeug==2.3.7
+anthropic==0.40.0

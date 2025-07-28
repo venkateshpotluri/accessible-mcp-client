@@ -1,12 +1,14 @@
+import json
 import logging
 import os
+import re
 import uuid
-import json
 from datetime import datetime
 
 from flask import Flask, jsonify, render_template, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
+from chat.service import ChatService
 from mcp.client import MCPClient
 from mcp.transport import HTTPTransport, StdioTransport, WebSocketTransport
 
@@ -19,6 +21,43 @@ logging.getLogger("mcp.transport").setLevel(logging.INFO)
 logging.getLogger("mcp.client").setLevel(logging.INFO)
 
 logger.info("=== Flask application starting up ===")
+
+# Constants for validation
+MAX_MESSAGE_LENGTH = int(os.getenv("MAX_MESSAGE_LENGTH", "10000"))
+MAX_SESSION_TITLE_LENGTH = int(os.getenv("MAX_SESSION_TITLE_LENGTH", "200"))
+
+
+def validate_chat_message(message: str) -> tuple[bool, str]:
+    """Validate chat message input"""
+    if not message or not isinstance(message, str):
+        return False, "Message must be a non-empty string"
+
+    # Strip whitespace for length check
+    stripped_message = message.strip()
+    if not stripped_message:
+        return False, "Message cannot be empty or contain only whitespace"
+
+    if len(message) > MAX_MESSAGE_LENGTH:
+        return False, f"Message too long. Maximum length is {MAX_MESSAGE_LENGTH} characters"
+
+    # Basic HTML/script tag detection for XSS prevention
+    if re.search(r"<\s*script[^>]*>.*?<\s*/\s*script\s*>", message, re.IGNORECASE | re.DOTALL):
+        return False, "Message contains potentially dangerous content"
+
+    return True, ""
+
+
+def sanitize_html_content(content: str) -> str:
+    """Basic HTML sanitization for user content"""
+    if not content:
+        return content
+
+    # Replace common HTML entities that could be used for XSS
+    content = content.replace("&", "&amp;")  # Must be first to avoid double encoding
+    content = content.replace("<", "&lt;").replace(">", "&gt;")
+    content = content.replace('"', "&quot;").replace("'", "&#x27;")
+
+    return content
 
 
 class ServerConfigManager:
@@ -81,6 +120,9 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 # Initialize configuration manager
 config_manager = ServerConfigManager()
 
+# Initialize chat service
+chat_service = ChatService()
+
 # Store active MCP clients
 active_clients = {}
 
@@ -136,6 +178,9 @@ class ServerConfig:
 
 # Load server configurations from persistent storage now that ServerConfig is defined
 server_configs.update(config_manager.load_configs())
+
+# Set up chat service with MCP clients reference
+chat_service.set_mcp_clients(active_clients)
 
 
 def auto_connect_servers():
@@ -199,6 +244,12 @@ auto_connect_servers()
 def index():
     """Main application interface"""
     return render_template("index.html")
+
+
+@app.route("/chat")
+def chat():
+    """Chat interface page"""
+    return render_template("chat.html")
 
 
 @app.route("/connections")
@@ -436,6 +487,116 @@ def test_connection(server_id):
     except Exception as e:
         logger.error(f"Error testing connection: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
+
+
+# Chat API Routes
+
+
+@app.route("/api/chat/sessions", methods=["GET"])
+def list_chat_sessions():
+    """List all chat sessions"""
+    try:
+        sessions = chat_service.list_sessions()
+        return jsonify(sessions)
+    except Exception as e:
+        logger.error(f"Error listing chat sessions: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/chat/sessions", methods=["POST"])
+def create_chat_session():
+    """Create a new chat session"""
+    try:
+        data = request.get_json() or {}
+        title = data.get("title")
+
+        # Validate title if provided
+        if title is not None:
+            if not isinstance(title, str):
+                return jsonify({"error": "Title must be a string"}), 400
+            if len(title) > MAX_SESSION_TITLE_LENGTH:
+                return jsonify({"error": f"Title too long. Maximum length is {MAX_SESSION_TITLE_LENGTH} characters"}), 400
+
+            # Sanitize title
+            title = sanitize_html_content(title.strip()) or None
+
+        session = chat_service.create_session(title=title)
+        return jsonify(session.to_dict()), 201
+    except Exception as e:
+        logger.error(f"Error creating chat session: {e}")
+        return jsonify({"error": "An internal error occurred while creating the session"}), 500
+
+
+@app.route("/api/chat/sessions/<session_id>", methods=["GET"])
+def get_chat_session(session_id):
+    """Get a chat session"""
+    try:
+        session = chat_service.get_session(session_id)
+        if not session:
+            return jsonify({"error": "Session not found"}), 404
+
+        return jsonify(session.to_dict())
+    except Exception as e:
+        logger.error(f"Error getting chat session: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/chat/sessions/<session_id>", methods=["DELETE"])
+def delete_chat_session(session_id):
+    """Delete a chat session"""
+    try:
+        success = chat_service.delete_session(session_id)
+        if not success:
+            return jsonify({"error": "Session not found"}), 404
+
+        return jsonify({"message": "Session deleted successfully"})
+    except Exception as e:
+        logger.error(f"Error deleting chat session: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route("/api/chat/sessions/<session_id>/messages", methods=["POST"])
+def send_chat_message(session_id):
+    """Send a message to a chat session"""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Request body must be valid JSON"}), 400
+
+        if "message" not in data:
+            return jsonify({"error": "Message is required"}), 400
+
+        user_message = data["message"]
+        server_ids = data.get("server_ids", [])
+
+        # Validate message content
+        is_valid, error_msg = validate_chat_message(user_message)
+        if not is_valid:
+            return jsonify({"error": error_msg}), 400
+
+        # Sanitize the message
+        user_message = sanitize_html_content(user_message)
+
+        # Validate server_ids format
+        if server_ids and not isinstance(server_ids, list):
+            return jsonify({"error": "server_ids must be a list"}), 400
+
+        # Validate server IDs exist and are connected
+        if server_ids:
+            for server_id in server_ids:
+                if not isinstance(server_id, str):
+                    return jsonify({"error": "All server IDs must be strings"}), 400
+                if server_id not in active_clients:
+                    return jsonify({"error": f"Server {server_id} not connected"}), 400
+
+        response_message = chat_service.send_message(session_id, user_message, server_ids)
+        return jsonify(response_message.to_dict())
+
+    except ValueError as e:
+        return jsonify({"error": str(e)}), 400
+    except Exception as e:
+        logger.error(f"Error sending chat message: {e}")
+        return jsonify({"error": "An internal error occurred while processing your message"}), 500
 
 
 # MCP Protocol API Routes
