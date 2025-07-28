@@ -26,7 +26,21 @@ echo "ANTHROPIC_API_KEY=your_anthropic_api_key_here" >> .env
 
 Get your API key from the [Anthropic Console](https://console.anthropic.com/).
 
-### 2. Connect MCP Servers
+### 2. Optional Configuration
+
+You can customize the chat behavior with these environment variables:
+
+```bash
+# Claude model configuration
+export CLAUDE_MODEL="claude-3-5-sonnet-20241022"  # Default model
+export CLAUDE_MAX_TOKENS="4000"                   # Max response tokens
+
+# Message limits
+export MAX_MESSAGE_LENGTH="10000"                 # Max characters per message
+export MAX_SESSION_TITLE_LENGTH="200"             # Max title length
+```
+
+### 3. Connect MCP Servers
 
 Before chatting, connect your MCP servers through the Connections page:
 1. Navigate to the Connections tab
@@ -88,6 +102,13 @@ The current weather in San Francisco is...
 - **High Contrast Mode**: Visual accessibility options
 - **Focus Management**: Proper focus handling for modal dialogs and forms
 
+### Security Features
+- **Input Validation**: All chat messages are validated for length and content safety
+- **HTML Sanitization**: User input is sanitized to prevent XSS attacks
+- **API Key Validation**: Anthropic API keys are validated for format and authenticity
+- **Rate Limiting Protection**: Built-in handling for API rate limits
+- **Error Handling**: Sensitive information is not exposed in error messages
+
 ## Troubleshooting
 
 ### Common Issues
@@ -111,5 +132,20 @@ The current weather in San Francisco is...
 - Verify the selected MCP servers are still connected
 - Check MCP server logs for detailed error information
 - Try reconnecting to the affected servers
+
+#### "Message contains potentially dangerous content"
+- Review your message for HTML tags or script elements
+- Remove any HTML markup from your message
+- Contact support if you believe this is a false positive
+
+#### "Message too long" or "Title too long"
+- Check the message length limits (default: 10,000 characters for messages, 200 for titles)
+- Adjust limits using `MAX_MESSAGE_LENGTH` and `MAX_SESSION_TITLE_LENGTH` environment variables
+- Break long messages into smaller parts
+
+#### "API key validation failed"
+- Verify your `ANTHROPIC_API_KEY` format (should start with "sk-ant-")
+- Ensure the API key is active in the Anthropic Console
+- Check for any extra spaces or characters in the key
 
 For more detailed information, see the full documentation in the repository.

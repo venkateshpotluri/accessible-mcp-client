@@ -170,6 +170,10 @@ Example chat interactions:
 - `ANTHROPIC_API_KEY`: Anthropic API key for chat functionality
 - `MCP_TIMEOUT`: Default timeout for MCP operations (default: 30 seconds)
 - `MAX_SERVERS`: Maximum number of concurrent server connections (default: 10)
+- `CLAUDE_MODEL`: Claude model to use for chat (default: claude-3-5-sonnet-20241022)
+- `CLAUDE_MAX_TOKENS`: Maximum tokens for Claude responses (default: 4000)
+- `MAX_MESSAGE_LENGTH`: Maximum length for chat messages (default: 10000)
+- `MAX_SESSION_TITLE_LENGTH`: Maximum length for chat session titles (default: 200)
 
 ### Configuration File
 Create a `config.json` file in the root directory:
@@ -307,6 +311,9 @@ For full-stack deployment with Flask backend:
 ```
 AccessibleMCPClient/
 ├── app.py                 # Main Flask application
+├── chat/                  # Chat service implementation
+│   ├── __init__.py
+│   └── service.py        # Claude AI integration and chat management
 ├── mcp/                   # MCP protocol implementation
 │   ├── __init__.py
 │   ├── client.py         # MCP client implementation
@@ -324,10 +331,14 @@ AccessibleMCPClient/
 ├── templates/           # Jinja2 templates
 │   ├── base.html       # Base template
 │   ├── index.html      # Main interface
+│   ├── chat.html       # Chat interface
 │   ├── connections.html # Server connections
 │   └── help.html       # Help documentation
+├── docs/               # Additional documentation
+│   └── chat.md         # Chat functionality guide
 ├── tests/              # Test suite
 ├── requirements.txt    # Python dependencies
+├── requirements-dev.txt # Development dependencies
 ├── Dockerfile         # Docker configuration
 ├── Procfile          # Heroku configuration
 └── README.md         # This file
