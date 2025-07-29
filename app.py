@@ -10,6 +10,7 @@ from flask import Flask, jsonify, render_template, request
 from flask_socketio import SocketIO, emit, join_room, leave_room
 
 from chat.service import ChatService
+from config import get_config_class
 from mcp.client import MCPClient
 from mcp.transport import HTTPTransport, StdioTransport, WebSocketTransport
 
@@ -27,10 +28,6 @@ logging.getLogger("mcp.client").setLevel(logging.INFO)
 
 logger.info("=== Flask application starting up ===")
 
-# Constants for validation
-MAX_MESSAGE_LENGTH = int(os.getenv("MAX_MESSAGE_LENGTH", "10000"))
-MAX_SESSION_TITLE_LENGTH = int(os.getenv("MAX_SESSION_TITLE_LENGTH", "200"))
-
 
 def validate_chat_message(message: str) -> tuple[bool, str]:
     """Validate chat message input"""
@@ -42,8 +39,17 @@ def validate_chat_message(message: str) -> tuple[bool, str]:
     if not stripped_message:
         return False, "Message cannot be empty or contain only whitespace"
 
-    if len(message) > MAX_MESSAGE_LENGTH:
-        return False, f"Message too long. Maximum length is {MAX_MESSAGE_LENGTH} characters"
+    # Get max length from Flask app config if available, otherwise use default
+    try:
+        from flask import current_app
+
+        max_length = current_app.config.get("MAX_MESSAGE_LENGTH", 10000)
+    except RuntimeError:
+        # If we're outside application context, use default
+        max_length = int(os.getenv("MAX_MESSAGE_LENGTH", "10000"))
+
+    if len(message) > max_length:
+        return False, f"Message too long. Maximum length is {max_length} characters"
 
     # Basic HTML/script tag detection for XSS prevention
     if re.search(r"<\s*script[^>]*>.*?<\s*/\s*script\s*>", message, re.IGNORECASE | re.DOTALL):
@@ -118,9 +124,48 @@ class ServerConfigManager:
             return False
 
 
+# Create Flask application with proper configuration
 app = Flask(__name__)
-app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "your-secret-key-change-in-production")
+
+# Initialize configuration using Flask best practices
+config_class = get_config_class()
+config_class.init_app(app)
+
+# Log configuration info
+logger.info(f"Using configuration: {config_class.__name__}")
+logger.info(f"Flask ENV: {os.getenv('FLASK_ENV', 'production')}")
+
+# Initialize SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*")
+
+
+def get_app_config(key: str, default=None):
+    """Get configuration value from Flask app config with fallback to environment variables.
+
+    This helper function provides a consistent way to access configuration values
+    that follows Flask best practices while maintaining backward compatibility.
+    """
+    try:
+        from flask import current_app
+
+        return current_app.config.get(key, default)
+    except RuntimeError:
+        # If we're outside application context, fall back to environment variables
+        # This maintains backward compatibility for any code that runs outside app context
+        env_value = os.getenv(key, default)
+        # Try to convert to appropriate type if default is provided
+        if default is not None and env_value != default:
+            try:
+                if isinstance(default, int):
+                    return int(env_value)
+                elif isinstance(default, bool):
+                    return env_value.lower() in ("true", "1", "yes", "on")
+                elif isinstance(default, float):
+                    return float(env_value)
+            except (ValueError, AttributeError):
+                pass
+        return env_value
+
 
 # Initialize configuration manager
 config_manager = ServerConfigManager()
@@ -519,8 +564,15 @@ def create_chat_session():
         if title is not None:
             if not isinstance(title, str):
                 return jsonify({"error": "Title must be a string"}), 400
-            if len(title) > MAX_SESSION_TITLE_LENGTH:
-                return jsonify({"error": f"Title too long. Maximum length is {MAX_SESSION_TITLE_LENGTH} characters"}), 400
+            if len(title) > get_app_config("MAX_SESSION_TITLE_LENGTH", 200):
+                return (
+                    jsonify(
+                        {
+                            "error": f"Title too long. Maximum length is {get_app_config('MAX_SESSION_TITLE_LENGTH', 200)} characters"
+                        }
+                    ),
+                    400,
+                )
 
             # Sanitize title
             title = sanitize_html_content(title.strip()) or None
