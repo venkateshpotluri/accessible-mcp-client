@@ -13,10 +13,36 @@ import anthropic
 
 logger = logging.getLogger(__name__)
 
-# Configuration constants
-DEFAULT_MODEL = os.getenv("CLAUDE_MODEL", "claude-3-5-sonnet-20241022")
-DEFAULT_MAX_TOKENS = int(os.getenv("CLAUDE_MAX_TOKENS", "4000"))
-MAX_MESSAGE_LENGTH = int(os.getenv("MAX_MESSAGE_LENGTH", "10000"))
+
+def get_config_value(key: str, default=None, value_type=None):
+    """Get configuration value with proper type conversion.
+
+    This helper function provides consistent configuration access
+    across the chat service module.
+    """
+    try:
+        from flask import current_app
+
+        value = current_app.config.get(key, default)
+    except (RuntimeError, ImportError):
+        # If we're outside application context or Flask isn't available
+        value = os.getenv(key, default)
+
+    # Convert to appropriate type
+    if value is not None and value_type is not None:
+        try:
+            if value_type == int:
+                return int(value)
+            elif value_type == bool:
+                if isinstance(value, str):
+                    return value.lower() in ("true", "1", "yes", "on")
+                return bool(value)
+            elif value_type == float:
+                return float(value)
+        except (ValueError, TypeError):
+            pass
+
+    return value
 
 
 class ChatMessage:
@@ -151,7 +177,11 @@ class ChatService:
 
         try:
             # Make a minimal request to test the key
-            self.client.messages.create(model=DEFAULT_MODEL, max_tokens=1, messages=[{"role": "user", "content": "test"}])
+            self.client.messages.create(
+                model=get_config_value("CLAUDE_MODEL", "claude-3-5-sonnet-20241022"),
+                max_tokens=1,
+                messages=[{"role": "user", "content": "test"}],
+            )
         except anthropic.AuthenticationError:
             raise ValueError("Invalid Anthropic API key")
         except anthropic.PermissionDeniedError:
@@ -324,8 +354,8 @@ class ChatService:
         messages = session.get_messages_for_claude()
 
         return {
-            "model": DEFAULT_MODEL,
-            "max_tokens": DEFAULT_MAX_TOKENS,
+            "model": get_config_value("CLAUDE_MODEL", "claude-3-5-sonnet-20241022"),
+            "max_tokens": get_config_value("CLAUDE_MAX_TOKENS", 4000, int),
             "system": system_message,
             "messages": messages,
             "tools": claude_tools if claude_tools else None,
